@@ -1,0 +1,823 @@
+<style>
+  .section-box { margin-bottom: 24px; border-left: 3px solid #0d6efd; padding-left: 10px; }
+  .section-title { font-size: 0.8rem; font-weight: bold; text-transform: uppercase; color: #00ffaa; margin-bottom: 8px; }
+
+  /* Tela Cheia CSS Imersivo */
+  .fullscreen-mode-active {
+    position: fixed !important; top: 0; left: 0; right: 0; bottom: 0;
+    width: 100vw; height: 100vh; z-index: 1035;
+    background-color: #121212; margin: 0 !important; padding: 20px !important;
+    border-radius: 0 !important; border-left: none !important;
+    overflow-y: auto !important; 
+  }
+  
+  .fullscreen-mode-active .sco-wrapper { 
+    max-height: none !important; 
+    overflow-y: visible !important; 
+  }
+
+  /* Força modais e alertas do sistema ficarem SEMPRE ACIMA da tela cheia */
+  .swal2-container { z-index: 999999 !important; }
+  .modal { z-index: 999999 !important; }
+  .modal-backdrop { z-index: 999998 !important; }
+
+  /* ===== ESTILO DOS CARTÕES SCO ===== */
+  .sco-card { background-color: #1a1a1a; border: 1px solid #444; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden; }
+  .sco-header { background-color: #2b2b2b; padding: 10px 15px; border-bottom: 2px solid #ffc107; display: flex; justify-content: space-between; align-items: center; }
+  .sco-form-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; color: #e0e0e0; }
+  .sco-form-table td { border: 1px solid #444; padding: 10px 15px; vertical-align: top; background-color: #1e1e1e; }
+  .sco-form-table .td-label { font-size: 0.8rem; font-weight: 800; color: #ffc107; display: block; margin-bottom: 5px; }
+  .sco-form-table .td-value { white-space: pre-wrap; font-size: 0.9rem; line-height: 1.4; color: #fff; }
+  .sco-form-table .bg-darker { background-color: #151515 !important; }
+</style>
+
+<div class="section-box mt-3" id="sco-section-box">
+  <div class="section-title mb-2">PLANEJAMENTO TÁTICO (SCO 201/202)</div>
+
+  <div class="d-flex flex-wrap align-items-center mb-3 gap-2">
+    <button class="btn btn-warning fw-bold text-dark px-3 shadow-sm" onclick="abrirModalSCO()">
+      <i class="bi bi-pencil-square"></i> Novo Formulário SCO
+    </button>
+    <button class="btn btn-outline-info fw-bold shadow-sm" onclick="recarregarSCO()">
+      <i class="bi bi-arrow-clockwise"></i> Atualizar Lista
+    </button>
+    <button id="btnFsSCO" class="btn btn-outline-light border-secondary fw-bold shadow-sm" onclick="toggleFsSCO()">
+      <i class="bi bi-arrows-fullscreen"></i> Tela Cheia
+    </button>
+
+    <div class="d-flex align-items-center gap-2 justify-content-end flex-wrap ms-auto">
+      <span class="text-info fw-bold small">FILTRAR:</span>
+      <input type="text" id="fScoResp" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 180px;" placeholder="Responsável..." oninput="aplicarFiltrosSCO()">
+      
+      <select id="fScoDia" class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 120px;" onchange="aplicarFiltrosSCO()">
+        <option value="">Dia (Todos)</option>
+      </select>
+
+      <button class="btn btn-sm btn-primary fw-bold ms-2" id="contadorSCO" style="pointer-events: none;">Total: 0</button>
+    </div>
+  </div>
+
+  <div class="sco-wrapper" id="lista-SCO">
+    <div class="text-center text-muted py-5 border border-secondary rounded mt-3" style="border-style: dashed !important;">
+        Abra uma operação para carregar os formulários SCO.
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalSCO" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content bg-dark text-white border-warning" style="border: 2px solid #ffc107;">
+      
+      <div class="modal-header border-secondary" style="background-color: #000;">
+        <h5 class="modal-title text-white fw-bold w-100 text-center fs-6">
+          BRIEFING E OBJETIVOS DO INCIDENTE (SCO-201 e 202)
+        </h5>
+        <button type="button" class="btn-close btn-close-white position-absolute end-0 me-3" data-bs-dismiss="modal"></button>
+      </div>
+      
+      <div class="modal-body p-3" style="background-color: #121212;">
+        <form id="formSCO">
+          <input type="hidden" id="scoLinha">
+          <input type="hidden" id="scoToken">
+
+          <div class="border border-secondary rounded" style="background-color: #1e1e1e;">
+            
+            <div class="row g-0 border-bottom border-secondary">
+              <div class="col-md-3 border-end border-secondary p-2 text-center d-flex flex-column justify-content-center">
+                <label class="form-label text-white small fw-bold mb-1">1. Nome do Incidente:</label>
+                <input type="text" id="sco_nome_op" readonly class="form-control form-control-sm bg-transparent text-white border-0 fw-bold text-center fs-6 p-0" style="outline: none;">
+              </div>
+              <div class="col-md-3 border-end border-secondary p-2 text-center d-flex flex-column justify-content-center">
+                <label class="form-label text-white small fw-bold mb-1">2. Município Atingido:</label>
+                <input type="text" id="sco_municipio" readonly class="form-control form-control-sm bg-transparent text-white border-0 fw-bold text-center p-0 text-uppercase" style="outline: none;">
+              </div>
+              <div class="col-md-4 border-end border-secondary p-2 text-center">
+                <label class="form-label text-white small fw-bold mb-2">3. Ciclo Operacional:</label>
+                <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                  <span class="text-white small fw-bold">Início:</span>
+                  <input type="datetime-local" id="scoInicio" class="form-control form-control-sm bg-dark text-white border-secondary" style="color-scheme: dark; width: auto;">
+                </div>
+                <div class="d-flex align-items-center justify-content-center gap-2">
+                  <span class="text-white small fw-bold">Fim:</span>
+                  <input type="datetime-local" id="scoFim" class="form-control form-control-sm bg-dark text-white border-secondary" style="color-scheme: dark; width: auto;">
+                </div>
+              </div>
+              <div class="col-md-2 p-2 text-center d-flex flex-column justify-content-center">
+                <label class="form-label text-white small fw-bold mb-1">4. Dia de Operação:</label>
+                <input type="text" id="scoDia" class="form-control form-control-sm bg-transparent text-white border-0 fw-bold text-center text-uppercase fs-6 p-0" placeholder="DIA 1">
+              </div>
+            </div>
+
+            <div class="row g-0 d-flex">
+              <div class="col-md-7 border-end border-secondary d-flex flex-column">
+                <div class="p-3 border-bottom border-secondary flex-grow-1">
+                  <label class="form-label text-white small fw-bold mb-1">5. Resumo da Situação e briefing de saúde e segurança:</label>
+                  <textarea id="scoResumo" class="form-control form-control-sm bg-dark text-white border-secondary" rows="5" placeholder="Descreva o resumo..."></textarea>
+                </div>
+                <div class="p-3 border-bottom border-secondary flex-grow-1">
+                  <label class="form-label text-white small fw-bold mb-1">6. Objetivos atuais e planejados:</label>
+                  <textarea id="scoObjetivos" class="form-control form-control-sm bg-dark text-white border-secondary" rows="4" placeholder="Descreva os objetivos..."></textarea>
+                </div>
+                <div class="p-3 border-bottom border-secondary flex-grow-1">
+                  <label class="form-label text-white small fw-bold mb-1">7. Situação Geral:</label>
+                  <textarea id="scoSituacao" class="form-control form-control-sm bg-dark text-white border-secondary" rows="3" placeholder="Descreva a situação geral..."></textarea>
+                </div>
+                <div class="p-3 border-bottom border-secondary flex-grow-1">
+                  <label class="form-label text-white small fw-bold mb-1">8. Ênfase do Comando no período operacional:</label>
+                  <textarea id="scoEnfase" class="form-control form-control-sm bg-dark text-white border-secondary" rows="3" placeholder="Foco de segurança, comunicações..."></textarea>
+                </div>
+                <div class="p-3">
+                  <label class="form-label text-white small fw-bold mb-2">10. PREPARADO POR / REGISTRO:</label>
+                  <div class="d-flex flex-wrap gap-2">
+                    <div style="flex: 2; min-width: 150px;">
+                      <span class="text-white small fw-bold d-block mb-1">NOME:</span>
+                      <input type="text" id="scoNome" list="listaNomesSCO" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Pesquisar militar...">
+                    </div>
+                    <div style="flex: 1; min-width: 120px;">
+                      <span class="text-white small fw-bold d-block mb-1">FUNÇÃO:</span>
+                      <select id="scoCargo" class="form-select form-select-sm bg-dark text-white border-secondary">
+                        <option value="" selected disabled>Selecione...</option>
+                        <option value="Cmt Incidente">Cmt Incidente</option>
+                        <option value="Oficial Segurança">Oficial Seg.</option>
+                        <option value="Chefe de Operações">Chefe Op.</option>
+                        <option value="Chefe Planejamento">Chefe Plan.</option>
+                        <option value="Chefe Logística">Chefe Log.</option>
+                      </select>
+                    </div>
+                    <div style="flex: 1; min-width: 130px;">
+                      <span class="text-white small fw-bold d-block mb-1">DATA/HORA:</span>
+                      <input type="datetime-local" id="scoDataRegistro" class="form-control form-control-sm bg-dark text-white border-secondary" style="color-scheme: dark;">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-5 p-3 d-flex flex-column" style="background-color: #151515;">
+                <label class="form-label text-info fw-bold mb-3 fs-6">9. Ações, estratégias e táticas atuais e planejadas:</label>
+                <div class="d-flex gap-2 mb-3">
+                  <input type="time" id="input_hora_acao" class="form-control form-control-sm bg-dark text-success border-secondary fw-bold" style="width: 100px; color-scheme: dark;">
+                  <input type="text" id="input_nova_acao" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Ação / Tática...">
+                  <button type="button" class="btn btn-success btn-sm fw-bold px-2" onclick="adicionarAcaoAoFormulario()"><i class="bi bi-plus-lg"></i></button>
+                </div>
+                <div class="flex-grow-1 rounded" style="min-height: 350px; max-height: 500px; overflow-y: auto;">
+                  <table class="table table-dark table-sm m-0 border-0" style="font-size: 0.85rem;">
+                    <tbody id="corpoTabelaAcoesFormulario">
+                      <tr><td colspan="3" class="text-center text-muted py-2 border-0">Nenhuma ação cadastrada.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          </div> 
+        </form>
+      </div>
+      
+      <div class="modal-footer border-secondary" style="background-color: #2b2b2b;">
+        <button type="button" class="btn btn-secondary btn-sm fw-bold" data-bs-dismiss="modal">CANCELAR</button>
+        <button type="button" class="btn btn-warning btn-sm fw-bold text-dark" id="btnSalvarSCO" onclick="salvarSCO()"><i class="bi bi-save"></i> SALVAR FORMULÁRIO</button>
+      </div>
+      
+    </div>
+  </div>
+</div>
+<datalist id="listaNomesSCO"></datalist>
+
+<script>
+  document.body.appendChild(document.getElementById('modalSCO'));
+
+  let cacheSCO = [];
+  let acoesFormularioAtual = [];
+
+  function toggleFsSCO() {
+    const box = document.getElementById('sco-section-box');
+    const btn = document.getElementById('btnFsSCO');
+    box.classList.toggle('fullscreen-mode-active');
+    if (box.classList.contains('fullscreen-mode-active')) {
+      btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i> Sair Tela Cheia';
+      btn.classList.replace('btn-outline-light', 'btn-light');
+      btn.classList.add('text-dark');
+    } else {
+      btn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i> Tela Cheia';
+      btn.classList.replace('btn-light', 'btn-outline-light');
+      btn.classList.remove('text-dark');
+    }
+  }
+
+  function recarregarSCO() {
+      const idOp = document.getElementById('idOpAtiva') ? document.getElementById('idOpAtiva').value : null;
+      if (!idOp) return;
+
+      document.getElementById('lista-SCO').innerHTML = '<div class="text-info text-center mt-5"><div class="spinner-border spinner-border-sm me-2"></div>Buscando formulários no servidor...</div>';
+      
+      if (typeof google !== 'undefined') {
+          google.script.run.withSuccessHandler(nomes => {
+              const dl = document.getElementById('listaNomesSCO');
+              dl.innerHTML = '';
+              if(nomes) nomes.forEach(n => { const opt = document.createElement('option'); opt.value = n; dl.appendChild(opt); });
+          }).obterNomesParaPesquisaSCO(idOp);
+
+          google.script.run.withSuccessHandler(d => { 
+              cacheSCO = d || []; 
+              renderizarSCO(); 
+          }).carregarHistoricoSCO(idOp);
+      }
+  }
+
+  function renderizarSCO() {
+    const container = document.getElementById('lista-SCO');
+    if (!cacheSCO || cacheSCO.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted py-5 border border-secondary rounded mt-3" style="border-style: dashed !important;">Nenhum planejamento tático registrado para esta operação.</div>';
+        document.getElementById('contadorSCO').textContent = "Total: 0";
+        return;
+    }
+
+    let html = '';
+    cacheSCO.forEach(f => {
+        let acoesTabela = '';
+        if (f.acoesList && f.acoesList.length > 0) {
+            f.acoesList.forEach(a => {
+                acoesTabela += `
+                <tr class="border-bottom border-secondary">
+                    <td class="py-3 text-center align-middle" style="width: 40px; border: none;">
+                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                    </td>
+                    <td class="py-3 border-0">
+                        <span class="text-success fw-bold">${a.hora}</span><br>
+                        <span class="text-white" style="font-size: 0.9rem;">${a.texto}</span>
+                    </td>
+                </tr>`;
+            });
+        } else {
+            acoesTabela = '<tr><td class="text-center text-muted border-0 py-3">Nenhuma ação vinculada.</td></tr>';
+        }
+
+        // CARTÃO COM O BOTÃO IMPRIMIR
+        html += `
+        <div class="sco-card mb-4" id="cartao-sco-${f.linha}" style="background-color: #1a1a1a; border: 1px solid #444; border-radius: 6px; overflow: hidden; box-shadow: 0 6px 12px rgba(0,0,0,0.4);">
+            
+            <div class="d-flex justify-content-between align-items-center p-3 border-bottom border-warning" style="background-color: #2b2b2b;">
+                <h5 class="m-0 text-white fw-bold"><i class="bi bi-journal-text text-warning me-2"></i> BRIEFING E OBJETIVOS DO INCIDENTE (SCO-201 e 202)</h5>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-info btn-sm fw-bold text-dark px-3 shadow-sm" onclick="imprimirSCO('${f.linha}')" id="btnImprimirSCO-${f.linha}">
+                        <i class="bi bi-printer-fill"></i> IMPRIMIR
+                    </button>
+                    <button class="btn btn-warning btn-sm fw-bold text-dark px-3 shadow-sm" onclick="editarSCO('${f.linha}')">
+                        <i class="bi bi-pencil-square"></i> EDITAR
+                    </button>
+                    <button class="btn btn-danger btn-sm fw-bold text-white px-3 shadow-sm" onclick="excluirSCO('${f.linha}', '${f.token}')">
+                        <i class="bi bi-trash3-fill"></i> EXCLUIR
+                    </button>
+                </div>
+            </div>
+            
+            <div class="d-flex flex-column" id="conteudo-impresso-${f.linha}">
+                <div class="row g-0 border-bottom border-secondary" style="background-color: #151515;">
+                    <div class="col-md-3 p-3 border-end border-secondary d-flex flex-column justify-content-center text-center">
+                        <span class="text-warning fw-bold mb-1" style="font-size: 0.85rem;">1. Nome do Incidente:</span>
+                        <span class="text-white fw-bold text-uppercase fs-6">${f.nomeOp || '-'}</span>
+                    </div>
+                    <div class="col-md-3 p-3 border-end border-secondary d-flex flex-column justify-content-center text-center">
+                        <span class="text-warning fw-bold mb-1" style="font-size: 0.85rem;">2. Município Atingido:</span>
+                        <span class="text-white fw-bold text-uppercase fs-6">${f.municipio || '-'}</span>
+                    </div>
+                    <div class="col-md-4 p-3 border-end border-secondary d-flex flex-column justify-content-center text-center">
+                        <span class="text-warning fw-bold mb-2" style="font-size: 0.85rem;">3. Ciclo Operacional:</span>
+                        <span class="text-white" style="font-size: 0.9rem;"><b>Início:</b> ${f.cicloInicio} <span class="mx-2">|</span> <b>Fim:</b> ${f.cicloFim}</span>
+                    </div>
+                    <div class="col-md-2 p-3 d-flex flex-column justify-content-center text-center">
+                        <span class="text-warning fw-bold mb-1" style="font-size: 0.85rem;">4. Dia de Operação:</span>
+                        <span class="text-info fw-bold text-uppercase fs-5 sco-dia-tag">${f.dia}</span>
+                    </div>
+                </div>
+
+                <div class="row g-0 d-flex">
+                    <div class="col-md-7 border-end border-secondary d-flex flex-column">
+                        <div class="p-3 border-bottom border-secondary">
+                            <span class="text-warning fw-bold d-block mb-1" style="font-size: 0.85rem;">5. Resumo da Situação e briefing:</span>
+                            <span class="text-white" style="font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${f.resumo || '-'}</span>
+                        </div>
+                        <div class="p-3 border-bottom border-secondary">
+                            <span class="text-warning fw-bold d-block mb-1" style="font-size: 0.85rem;">6. Objetivos atuais e planejados:</span>
+                            <span class="text-white" style="font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${f.objetivos || '-'}</span>
+                        </div>
+                        <div class="p-3 border-bottom border-secondary">
+                            <span class="text-warning fw-bold d-block mb-1" style="font-size: 0.85rem;">7. Situação Geral:</span>
+                            <span class="text-white" style="font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${f.situacao || '-'}</span>
+                        </div>
+                        <div class="p-3 border-bottom border-secondary flex-grow-1">
+                            <span class="text-warning fw-bold d-block mb-1" style="font-size: 0.85rem;">8. Ênfase do Comando no período:</span>
+                            <span class="text-white" style="font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${f.enfase || '-'}</span>
+                        </div>
+                        <div class="p-3" style="background-color: #151515;">
+                            <span class="text-warning fw-bold d-block mb-2" style="font-size: 0.85rem;">10. PREPARADO POR / REGISTRO:</span>
+                            <div class="d-flex flex-wrap justify-content-between text-white" style="font-size: 0.85rem;">
+                                <span><b>NOME:</b> <span class="sco-resp-tag">${f.nomeResp || '-'}</span></span>
+                                <span><b>FUNÇÃO:</b> ${f.cargo || '-'}</span>
+                                <span><b>DATA/HORA:</b> <span class="text-info">${f.dataRegistro}</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-5 p-3 d-flex flex-column" style="background-color: #151515;">
+                        <span class="text-info fw-bold d-block mb-3 fs-6">9. Ações, estratégias e táticas:</span>
+                        <div class="flex-grow-1" style="max-height: 600px; overflow-y: auto;">
+                            <table class="table table-dark table-sm m-0 border-0" style="background: transparent;">
+                                <tbody>
+                                    ${acoesTabela}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+    document.getElementById('contadorSCO').textContent = "Total: " + cacheSCO.length;
+    atualizarDatalistDias();
+}
+
+  function renderizarAcoesFormulario() {
+    const tbody = document.getElementById("corpoTabelaAcoesFormulario");
+    if (acoesFormularioAtual.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-2 border-0">Nenhuma ação cadastrada.</td></tr>`;
+      return;
+    }
+
+    let html = "";
+    acoesFormularioAtual.forEach((item, index) => {
+      html += `
+        <tr class="border-bottom border-secondary">
+          <td class="text-center align-middle" style="width: 30px; border: none;">
+            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+          </td>
+          <td class="align-middle border-0 py-2">
+            <span class="text-success fw-bold">${item.hora}</span><br>
+            <span class="text-white">${item.texto}</span>
+          </td>
+          <td class="text-center align-middle border-0" style="width: 40px;">
+            <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2" onclick="removerAcaoDoFormulario(${index})"><i class="bi bi-trash"></i></button>
+          </td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+
+  function adicionarAcaoAoFormulario() {
+    const inputHora = document.getElementById("input_hora_acao");
+    const inputTexto = document.getElementById("input_nova_acao");
+
+    let hora = inputHora.value.trim();
+    const texto = inputTexto.value.trim();
+
+    if (!texto) { 
+        if (typeof swalDark !== 'undefined') swalDark({ icon: 'warning', title: 'Atenção', text: 'Preencha a descrição da ação.' }); 
+        return; 
+    }
+    
+    if (!hora) {
+        const now = new Date();
+        hora = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    }
+
+    acoesFormularioAtual.push({ hora: hora, texto: texto });
+    inputTexto.value = ""; inputHora.value = "";
+    renderizarAcoesFormulario();
+  }
+
+  function removerAcaoDoFormulario(index) {
+    acoesFormularioAtual.splice(index, 1);
+    renderizarAcoesFormulario();
+  }
+
+  function abrirModalSCO() {
+    const idOpAtiva = document.getElementById('idOpAtiva') ? document.getElementById('idOpAtiva').value : null;
+    if (!idOpAtiva) { 
+        if (typeof swalDark !== 'undefined') swalDark({ icon: 'warning', title: 'Atenção', text: 'Nenhuma operação aberta.' }); 
+        return; 
+    }
+
+    document.getElementById('formSCO').reset();
+    document.getElementById('scoLinha').value = '';
+    document.getElementById('scoToken').value = '';
+    
+    acoesFormularioAtual = [];
+    renderizarAcoesFormulario();
+
+    let nomeOpAtiva = "OPERAÇÃO";
+    let municipioUCAtivo = "-";
+    let diaAtualCalculado = "DIA 1";
+
+    if (typeof operacoesGlobais !== 'undefined') {
+        const opSelecionada = operacoesGlobais.find(o => String(o.id) === String(idOpAtiva));
+        if (opSelecionada) {
+            nomeOpAtiva = opSelecionada.nome;
+            municipioUCAtivo = opSelecionada.municipio || "";
+            if (opSelecionada.uc && opSelecionada.uc !== "Nenhuma / Não se aplica") {
+                municipioUCAtivo += " - " + opSelecionada.uc;
+            }
+            if (typeof calcularDuracao === 'function') {
+                diaAtualCalculado = calcularDuracao(opSelecionada.inicio, opSelecionada.termino, opSelecionada.status);
+            }
+        }
+    }
+
+    document.getElementById('sco_nome_op').value = nomeOpAtiva;
+    document.getElementById('sco_municipio').value = municipioUCAtivo;
+    document.getElementById('scoDia').value = diaAtualCalculado;
+
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    const isoNow = now.toISOString().slice(0,16);
+    document.getElementById('scoInicio').value = isoNow;
+    document.getElementById('scoDataRegistro').value = isoNow;
+
+    document.getElementById('btnSalvarSCO').innerHTML = '<i class="bi bi-save"></i> SALVAR FORMULÁRIO';
+    document.getElementById('btnSalvarSCO').className = 'btn btn-warning btn-sm fw-bold text-dark';
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalSCO')).show();
+  }
+
+  function editarSCO(linha) {
+    const f = cacheSCO.find(x => String(x.linha) === String(linha));
+    if (!f) return;
+
+    document.getElementById('scoLinha').value = f.linha;
+    document.getElementById('scoToken').value = f.token;
+    
+    const formataIso = (dataBr) => {
+      if (!dataBr || dataBr.length < 16) return "";
+      const p = dataBr.split(' '); const d = p[0].split('/');
+      return `${d[2]}-${d[1]}-${d[0]}T${p[1]}`;
+    };
+
+    document.getElementById('sco_nome_op').value = f.nomeOp || '';
+    document.getElementById('sco_municipio').value = f.municipio || ''; 
+
+    document.getElementById('scoInicio').value = formataIso(f.cicloInicio);
+    document.getElementById('scoFim').value = formataIso(f.cicloFim);
+    document.getElementById('scoDia').value = f.dia;
+    document.getElementById('scoResumo').value = f.resumo;
+    document.getElementById('scoObjetivos').value = f.objetivos;
+    document.getElementById('scoEnfase').value = f.enfase;
+    document.getElementById('scoSituacao').value = f.situacao;
+    document.getElementById('scoNome').value = f.nomeResp;
+    document.getElementById('scoCargo').value = f.cargo;
+    document.getElementById('scoDataRegistro').value = formataIso(f.dataRegistro) || new Date().toISOString().slice(0,16);
+
+    acoesFormularioAtual = [];
+    if (f.acoesList && f.acoesList.length > 0) {
+        acoesFormularioAtual = JSON.parse(JSON.stringify(f.acoesList));
+    }
+    renderizarAcoesFormulario();
+
+    document.getElementById('btnSalvarSCO').innerHTML = '<i class="bi bi-arrow-repeat"></i> ATUALIZAR EDIÇÃO';
+    document.getElementById('btnSalvarSCO').className = 'btn btn-success btn-sm fw-bold text-white';
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalSCO')).show();
+  }
+
+  function salvarSCO() {
+    const idOpAtiva = document.getElementById('idOpAtiva') ? document.getElementById('idOpAtiva').value : null;
+    const nomeOpAtiva = document.getElementById('sco_nome_op').value || 'OP';
+    const municipioUC = document.getElementById('sco_municipio').value || '';
+    
+    if (!idOpAtiva) return;
+
+    const inputDia = document.getElementById('scoDia');
+    if (!inputDia.value.trim()) {
+        if (typeof swalDark !== 'undefined') swalDark({ icon: 'warning', title: 'Atenção', text: 'Informe qual o DIA da operação.' });
+        inputDia.focus(); return;
+    }
+
+    const dados = {
+        modoEdicao: document.getElementById('scoLinha').value !== '',
+        linha: document.getElementById('scoLinha').value,
+        token: document.getElementById('scoToken').value,
+        idOp: idOpAtiva,
+        nomeOp: nomeOpAtiva,
+        municipio: municipioUC, 
+        cicloInicio: document.getElementById('scoInicio').value,
+        cicloFim: document.getElementById('scoFim').value,
+        dia: document.getElementById('scoDia').value.toUpperCase(),
+        resumo: document.getElementById('scoResumo').value,
+        objetivos: document.getElementById('scoObjetivos').value,
+        enfase: document.getElementById('scoEnfase').value,
+        situacao: document.getElementById('scoSituacao').value,
+        nomeResp: document.getElementById('scoNome').value,
+        cargo: document.getElementById('scoCargo').value,
+        dataRegistro: document.getElementById('scoDataRegistro').value || new Date().toISOString(),
+        listaAcoes: acoesFormularioAtual
+    };
+
+    if (typeof swalDark !== 'undefined') swalDark({ title: 'Salvando SCO...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    google.script.run.withSuccessHandler(res => {
+        if (res.sucesso) {
+            bootstrap.Modal.getInstance(document.getElementById('modalSCO')).hide();
+            if (typeof swalDark !== 'undefined') swalDark({ icon: 'success', title: 'Sucesso', text: res.mensagem, timer: 1500, showConfirmButton: false });
+            recarregarSCO();
+        } else {
+            if (typeof swalDark !== 'undefined') swalDark({ icon: 'warning', title: 'Atenção', text: res.mensagem });
+        }
+    }).withFailureHandler(err => {
+        if (typeof swalDark !== 'undefined') swalDark({ icon: 'error', title: 'Erro', text: err.message })
+    }).salvarDadosSCO(dados);
+  }
+
+  function excluirSCO(linha, token) {
+    if (typeof swalDark === 'undefined') return;
+    swalDark({ title: 'Excluir?', text: 'As ações vinculadas também serão apagadas.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Excluir' }).then(result => {
+        if (!result.isConfirmed) return;
+        swalDark({ title: 'Excluindo...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+        google.script.run.withSuccessHandler(res => {
+            if (res.sucesso) {
+                swalDark({ icon: 'success', title: 'Excluído!', timer: 1000, showConfirmButton: false });
+                recarregarSCO();
+            } else { swalDark({ icon: 'error', title: 'Erro', text: res.mensagem }); }
+        }).withFailureHandler(err => swalDark({ icon: 'error', title: 'Erro', text: err.message })).excluirRegistroSCO(linha, token);
+    });
+  }
+
+  function atualizarDatalistDias() {
+      const selectDia = document.getElementById('fScoDia');
+      selectDia.innerHTML = '<option value="">Dia (Todos)</option>';
+      if(cacheSCO && cacheSCO.length > 0) {
+          const diasUnicos = [...new Set(cacheSCO.map(item => item.dia))].sort();
+          diasUnicos.forEach(d => {
+              const opt = document.createElement('option');
+              opt.value = d; opt.textContent = d; selectDia.appendChild(opt);
+          });
+      }
+  }
+
+  function aplicarFiltrosSCO() {
+      const termResp = document.getElementById('fScoResp').value.toLowerCase();
+      const termDia = document.getElementById('fScoDia').value;
+      
+      const cards = document.querySelectorAll('#lista-SCO .sco-card');
+      let visiveis = 0;
+
+      cards.forEach(card => {
+          // Busca pelas novas classes que criamos no Passo 1
+          const respText = card.querySelector('.sco-resp-tag')?.textContent.toLowerCase() || "";
+          const diaText = card.querySelector('.sco-dia-tag')?.textContent || "";
+
+          let mostrar = true;
+          if (termResp && !respText.includes(termResp)) mostrar = false;
+          if (termDia && diaText !== termDia) mostrar = false;
+          
+          if (mostrar) { 
+              card.style.display = 'block'; 
+              visiveis++; 
+          } else { 
+              card.style.display = 'none'; 
+          }
+      });
+
+      document.getElementById('contadorSCO').textContent = "Total: " + visiveis;
+  }
+
+  // ==========================================
+  // IMPRIMIR FORMULÁRIO SCO (PASSO 1B: TESTE SUPER SEGURO)
+  // ==========================================
+  // ==========================================
+// IMPRIMIR FORMULÁRIO SCO (RELATÓRIO PDF)
+// ==========================================
+function imprimirSCO(linhaDoCartao) {
+    const btn = document.getElementById('btnImprimirSCO-' + linhaDoCartao);
+    const txtOriginal = btn ? btn.innerHTML : '<i class="bi bi-printer-fill"></i> IMPRIMIR';
+    
+    if(btn) { 
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> GERANDO...'; 
+        btn.disabled = true; 
+    }
+
+    const f = cacheSCO.find(function(x) { return String(x.linha) === String(linhaDoCartao); });
+    if (!f) {
+        if(btn) { btn.innerHTML = txtOriginal; btn.disabled = false; }
+        if (typeof Swal !== 'undefined') Swal.fire('Atenção', 'Dados não encontrados.', 'warning');
+        return;
+    }
+
+    const dataHoraAtual = new Date().toLocaleString('pt-BR');
+
+    // Montar a tabela de Ações
+    let acoesHtml = '';
+    if (f.acoesList && f.acoesList.length > 0) {
+        f.acoesList.forEach(a => {
+            acoesHtml += `
+            <tr class="tr-acao">
+                <td class="td-acao text-center" style="width: 80px;">${a.hora}</td>
+                <td class="td-acao">${a.texto}</td>
+            </tr>`;
+        });
+    } else {
+        acoesHtml = `<tr class="tr-acao"><td colspan="2" class="td-acao text-center">Nenhuma ação registrada.</td></tr>`;
+    }
+
+    // Cabeçalho Oficial (Sem links de imagens externas)
+    const headerOficial = `
+        <table style="width: 100%; background-color: #2b2b2b; color: #fff; border-collapse: collapse; margin-bottom: 20px;">
+            <tr>
+                <td style="padding: 15px 20px; text-align: left; vertical-align: middle;">
+                    <h2 style="margin: 0; font-size: 18px; font-weight: bold; font-family: Arial, sans-serif; letter-spacing: 1px; text-transform: uppercase;">OPERAÇÃO ${f.nomeOp || '-'}</h2>
+                    <h4 style="margin: 8px 0 0 0; font-size: 14px; color: #ddd; font-family: Arial, sans-serif; text-transform: uppercase;">BRIEFING E OBJETIVOS DO INCIDENTE (SCO 201 e 202) - ${f.dia || '-'}</h4>
+                </td>
+                <td style="padding: 10px 20px; text-align: right; vertical-align: middle; width: 100px;">
+                    <h2 style="margin: 0; font-size: 16px; color: #ffc107; font-family: Arial, sans-serif;"></h2>
+                </td>
+            </tr>
+        </table>
+    `;
+
+    // Corpo do formulário
+    const conteudoFormulario = `
+        <div class="form-container">
+            <div class="row-form">
+                <div class="col-form b-right" style="flex: 2;">
+                    <span class="label">1. NOME DO INCIDENTE:</span>
+                    <span class="value">${f.nomeOp || '-'}</span>
+                </div>
+                <div class="col-form" style="flex: 2;">
+                    <span class="label">2. MUNICÍPIO ATINGIDO:</span>
+                    <span class="value">${f.municipio || '-'}</span>
+                </div>
+            </div>
+            <div class="row-form">
+                <div class="col-form b-right" style="flex: 3;">
+                    <span class="label">3. CICLO OPERACIONAL (DATA/HORA):</span>
+                    <span class="value"><strong>Início:</strong> ${f.cicloInicio} &nbsp;&nbsp;|&nbsp;&nbsp; <strong>Fim:</strong> ${f.cicloFim}</span>
+                </div>
+                <div class="col-form" style="flex: 1;">
+                    <span class="label">4. DIA DE OPERAÇÃO:</span>
+                    <span class="value"><strong>${f.dia || '-'}</strong></span>
+                </div>
+            </div>
+            <div class="row-form">
+                <div class="col-form" style="width: 100%;">
+                    <span class="label">5. RESUMO DA SITUAÇÃO:</span>
+                    <span class="value">${f.resumo || '-'}</span>
+                </div>
+            </div>
+            <div class="row-form">
+                <div class="col-form" style="width: 100%;">
+                    <span class="label">6. OBJETIVOS ATUAIS E PLANEJADOS:</span>
+                    <span class="value">${f.objetivos || '-'}</span>
+                </div>
+            </div>
+            <div class="row-form">
+                <div class="col-form" style="width: 100%;">
+                    <span class="label">7. ÊNFASE DO COMANDO NO PERÍODO:</span>
+                    <span class="value">${f.enfase || '-'}</span>
+                </div>
+            </div>
+            <div class="row-form">
+                <div class="col-form" style="width: 100%;">
+                    <span class="label">8. SITUAÇÃO GERAL:</span>
+                    <span class="value">${f.situacao || '-'}</span>
+                </div>
+            </div>
+            <div class="row-form">
+                <div class="col-form" style="width: 100%; padding: 0;">
+                    <div style="padding: 6px;">
+                        <span class="label">9. AÇÕES, ESTRATÉGIAS E TÁTICAS:</span>
+                    </div>
+                    <table class="tabela-acoes">
+                        <thead>
+                            <tr>
+                                <th style="border-left: none; width: 80px;">Hora</th>
+                                <th style="border-right: none;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${acoesHtml}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="row-form" style="border-bottom: none;">
+                <div class="col-form b-right" style="flex: 2;">
+                    <span class="label">10. PREPARADO POR (NOME / FUNÇÃO):</span>
+                    <span class="value" style="margin-top: 4px;">${f.nomeResp || '-'} / ${f.cargo || '-'}</span>
+                </div>
+                <div class="col-form" style="flex: 1;">
+                    <span class="label">REGISTRO DA INFORMAÇÃO (DATA/HORA):</span>
+                    <span class="value" style="margin-top: 4px;">${f.dataRegistro || '-'}</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // HTML Final sem NENHUMA tag de script interna
+    const htmlImpressao = `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <title>Impressão: SCO-201 e 202</title>
+        <style>
+            * { box-sizing: border-box; }
+            @page { margin: 10mm; size: A4 portrait; }
+            body { 
+                font-family: Arial, sans-serif; 
+                margin: 0; padding: 0; color: #000; background: #fff;
+                font-size: 12px;
+            }
+            
+            .rodape-visual-fixo { display: none; }
+            
+            .form-container { border: 2px solid #000; width: 100%; }
+            .row-form { display: flex; border-bottom: 2px solid #000; }
+            .col-form { padding: 6px; display: flex; flex-direction: column; }
+            .b-right { border-right: 2px solid #000; }
+            .label { font-weight: bold; font-size: 10px; margin-bottom: 4px; }
+            .value { min-height: 20px; white-space: pre-wrap; font-size: 12px; line-height: 1.4; }
+            
+            .tabela-acoes { width: 100%; border-collapse: collapse; margin-top: 5px; border-top: 1px solid #000; }
+            .tabela-acoes th { border: 1px solid #000; padding: 4px; text-align: center; background-color: #eee; font-size: 10px; }
+            .td-acao { border: 1px solid #000; padding: 6px; font-size: 12px; }
+
+            @media print {
+                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+                
+                .rodape-visual-fixo {
+                    display: flex !important; 
+                    position: fixed; 
+                    bottom: 0; 
+                    left: 0; 
+                    width: 100%;
+                    background-color: #2b2b2b; 
+                    padding: 10px 20px; 
+                    border-top: 2px solid #333;
+                    justify-content: space-between; 
+                    align-items: center; 
+                    z-index: 9999;
+                    color: #fff;
+                }
+                
+                thead { display: table-header-group; }
+                tfoot { display: table-footer-group; }
+                table.master-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                .row-form, .tr-acao { page-break-inside: avoid !important; break-inside: avoid !important; }
+            }
+        </style>
+    </head>
+    <body>
+        
+        <div class="rodape-visual-fixo">
+            <div style="font-size: 11px; line-height: 1.5;">
+                <strong>PLATAFORMA GEOFOGO - CBMMG</strong><br>
+                <span>Impresso em: ${dataHoraAtual}</span>
+            </div>
+            <div>
+                 <h2 style="margin: 0; font-size: 16px; color: #ffc107;">SISTEMA DE COMANDO EM OPERAÇÕES</h2>
+            </div>
+        </div>
+
+        <table class="master-table">
+            <thead>
+                <tr>
+                    <td style="border: none; padding: 0;">${headerOficial}</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="border: none; padding: 0;">${conteudoFormulario}</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td style="border: none; padding: 0;">
+                        <div style="height: 65px; width: 100%;"></div>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </body>
+    </html>
+    `;
+
+    // Abre a nova janela em branco
+    const janela = window.open('', '', 'width=900,height=700');
+    janela.document.write(htmlImpressao);
+    janela.document.close(); 
+
+    // O PULO DO GATO: O controle da impressão é feito aqui por fora!
+    setTimeout(function() {
+        janela.focus();
+        janela.print();
+        janela.close();
+        
+        // Devolve o botão ao estado normal na tela principal
+        if(btn) { 
+            btn.innerHTML = txtOriginal; 
+            btn.disabled = false; 
+        }
+    }, 600); // Meio segundo para renderizar as tabelas antes de abrir a caixa de diálogo
+}
+
+</script>

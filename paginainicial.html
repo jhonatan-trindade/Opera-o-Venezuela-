@@ -12,55 +12,32 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  
-  <style>
-    /* Força o calendário a ficar acima de tudo */
-    .flatpickr-calendar { z-index: 9999 !important; }
 
-    body { color: #e0e0e0; font-family: 'Segoe UI', sans-serif; }
-    
-    /* ==========================================
-       NOVOS FUNDOS (HUB E INTERNO)
-       ========================================== */
-    body.fundo-hub {
-      background-image: linear-gradient(rgba(18, 18, 18, 0.6), rgba(18, 18, 18, 0.85)), url('https://geoprocessamento.bombeiros.mg.gov.br/portal/sharing/rest/content/items/418fb340ec2640e7ba9b61959f9f5493/data') !important;
-      background-size: cover !important;
-      background-position: center !important;
-      background-attachment: fixed !important;
-      background-color: #121212;
-      transition: background-image 0.4s ease-in-out;
-    }
+  <style>
+    .flatpickr-calendar { z-index: 9999 !important; }
+    body { color: #e0e0e0; font-family: 'Segoe UI', sans-serif; background-color: #121212; }
 
     body.fundo-interno {
       background-image: none !important;
       background-color: #121212 !important;
-      transition: background-image 0.4s ease-in-out;
     }
 
-    .card-ceb { background: linear-gradient(145deg, #2b2b2b, #1e1e1e); border: 2px solid #ffc107; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; text-align: center; padding: 30px 20px; min-width: 250px; box-shadow: 0 8px 20px rgba(255, 193, 7, 0.15); }
-    .card-ceb:hover { transform: translateY(-5px); box-shadow: 0 12px 25px rgba(255, 193, 7, 0.3); background: linear-gradient(145deg, #333, #222); }
-    .card-ceb h2 { color: #ffc107; font-weight: 800; letter-spacing: 2px; margin-bottom: 5px; }
-
-    /* Cartão da operação atualizado com transparência e vidro fosco */
-    .card-op { background-color: rgba(26, 26, 26, 0.75); backdrop-filter: blur(4px); border: 1px solid #333; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; height: 100%; position: relative; overflow: hidden; }
+    .card-op { background-color: rgba(26,26,26,0.9); border: 1px solid #333; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; height: 100%; position: relative; overflow: hidden; }
     .card-op::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: #333; transition: 0.3s ease; }
     .card-op:hover { border-color: #0d6efd; transform: translateY(-4px); box-shadow: 0 6px 15px rgba(0,0,0,0.6); }
     .card-op:hover::before { background: #0d6efd; }
-    
+
     .view-container { display: none; padding: 20px; }
-    
+
     .header-op { background: transparent; padding: 0 0 10px 0; border-bottom: 1px solid #333; margin-bottom: 15px; }
     .header-op h5 { margin: 0; color: #fff; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
-    
+
     .nav-tabs { background: transparent; border-bottom: 1px solid #333; gap: 4px; padding-left: 0; margin-top: 0; position: relative; z-index: 10; }
     .nav-tabs .nav-link { color: #888; border: 1px solid transparent; padding: 8px 16px; font-weight: 700; font-size: 0.75rem; border-radius: 4px 4px 0 0; background: transparent; cursor: pointer; transition: all 0.2s ease; margin-bottom: -1px; text-transform: uppercase; letter-spacing: 0.5px; }
     .nav-tabs .nav-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
     .nav-tabs .nav-link.active { background: #1a1a1a; border-color: #333 #333 transparent; border-bottom: 2px solid #1a1a1a; color: #0d6efd; font-weight: 800; }
-    
-    .tab-content { background: #1a1a1a; padding: 15px; min-height: 80vh; border: 1px solid #333; border-top: none; }
 
-    .btn-outline-light-header { color: #ccc; border: 1px solid #444; background: transparent; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center;}
-    .btn-outline-light-header:hover { background: #333; color: #fff; border-color: #666; }
+    .tab-content { background: #1a1a1a; padding: 15px; min-height: 80vh; border: 1px solid #333; border-top: none; }
 
     #filtroChamada, #filtroDataInicio, #filtroDataFim, #filtroStatus { color: #ffffff !important; }
     ::placeholder { color: #bbbbbb !important; opacity: 1; }
@@ -73,35 +50,57 @@
     #tituloOperacao { font-size: 1.15rem !important; letter-spacing: 0.5px; }
     .header-op { margin-bottom: 5px !important; padding-bottom: 5px !important; }
     #conteudoAbas { padding: 12px 10px !important; min-height: 75vh; }
-    .section-box { margin-top: 5px !important; }
-</style>
+
+    /* HUB */
+    #viewHub { min-height: 90vh; display: flex; align-items: center; justify-content: center; }
+    .hub-card { background: linear-gradient(160deg, #1a1a1a 0%, #101418 100%); border: 1px solid #333; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 3rem; text-align: center; max-width: 560px; width: 100%; }
+    .hub-badge { letter-spacing: 2px; color: #0dcaf0; font-weight: 800; font-size: 0.8rem; }
+    .hub-metric { background-color: #151515; border: 1px solid #333; border-radius: 8px; padding: 1rem; }
+    .hub-metric .num { font-size: 2rem; font-weight: 800; line-height: 1; }
+  </style>
 </head>
-<body class="fundo-hub text-white">
-      
+<body class="text-white">
 
-
-  <?!= include('view_mapa'); ?>
-
-  <div class="container mt-4 view-container" id="viewOperacoes" style="display: none;">
-    
-    <div class="mb-3 d-flex justify-content-between align-items-center">
-      <button class="btn btn-outline-secondary text-white btn-sm" onclick="voltarAoHub()">
-        <i class="bi bi-arrow-left"></i> HUB DE GERENCIAMENTO
-      </button>
-
-    
-
-      <button class="btn btn-outline-danger btn-sm" onclick="fazerLogout()">
-        <i class="bi bi-box-arrow-right"></i> LOGOUT
+  <!-- ==================== HUB (TELA INICIAL) ==================== -->
+  <div id="viewHub">
+    <div class="hub-card">
+      <div class="hub-badge mb-2"><i class="bi bi-broadcast-pin"></i> SISTEMA DE COMANDO EM OPERAÇÕES · SCO 201/202</div>
+      <h1 class="text-white text-uppercase mb-2" style="font-weight:800;letter-spacing:1px;">Plataforma de Gestão de Incidentes</h1>
+      <p class="text-secondary mb-4">Registro de ações, vítimas e efetivo — captura simples e rápida em campo para gestão da ocorrência e produção de documentos pós-operação.</p>
+      <div class="row g-3 justify-content-center mb-4">
+        <div class="col-5">
+          <div class="hub-metric">
+            <div class="num text-success" id="globalAndamento">0</div>
+            <div class="small text-uppercase text-secondary fw-bold mt-1">Em andamento</div>
+          </div>
+        </div>
+        <div class="col-5">
+          <div class="hub-metric">
+            <div class="num text-secondary" id="globalConcluidas">0</div>
+            <div class="small text-uppercase text-secondary fw-bold mt-1">Concluídas</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-info text-dark fw-bold shadow w-100" style="font-size:1.1rem;padding:12px;" onclick="entrarOperacoes()">
+        <i class="bi bi-box-arrow-in-right"></i> ACESSAR OPERAÇÕES
       </button>
     </div>
-    
+  </div>
 
-    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom border-secondary">
-      <h3 class="fw-bold text-white m-0 text-uppercase" id="tituloPainelCob">OPERAÇÕES</h3>
+  <!-- ==================== LISTA DE OPERAÇÕES ==================== -->
+  <div class="container mt-4 view-container" id="viewOperacoes">
+
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+      <button class="btn btn-outline-secondary text-white btn-sm" onclick="voltarAoHub()">
+        <i class="bi bi-arrow-left"></i> INÍCIO
+      </button>
       <button class="btn btn-success fw-bold" onclick="abrirModalNovaOp()">
         <i class="bi bi-plus-lg"></i> Nova Operação
       </button>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom border-secondary">
+      <h3 class="fw-bold text-white m-0 text-uppercase" id="tituloPainelCob">OPERAÇÕES</h3>
     </div>
 
     <div class="card card-body bg-dark border-secondary p-3 text-white shadow-sm mb-4">
@@ -132,65 +131,62 @@
           </div>
         </div>
         <div class="col-md-1">
-          <button id="btnLimparFiltros" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center" title="Limpar Filtros" style="height: 38px;">
+          <button id="btnLimparFiltros" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center" title="Limpar Filtros" style="height:38px;">
             <i class="bi bi-x-circle"></i>
           </button>
         </div>
       </div>
     </div>
 
-    <div class="row g-4" id="gridCartoes">
-      </div>
+    <div class="row g-4" id="gridCartoes"></div>
   </div>
 
-  <div class="container-fluid mt-2 px-4 view-container" id="viewInterna" style="display: none;">
-    <!-- CABEÇALHO DA OPERAÇÃO COM BOTÃO DE SUGESTÕES À DIREITA -->
+  <!-- ==================== PAINEL INTERNO DA OPERAÇÃO ==================== -->
+  <div class="container-fluid mt-2 px-4 view-container" id="viewInterna">
     <div class="header-op d-flex align-items-center justify-content-between">
-      
-      <!-- Lado Esquerdo: Botão Voltar e Título da Operação -->
       <div class="d-flex align-items-center">
-        <button class="btn btn-outline-secondary btn-sm me-3 d-flex align-items-center justify-content-center text-white" title="Voltar às Operações" onclick="voltarParaOperacoes()" style="width: 40px; height: 38px; border-color: #555;">
+        <button class="btn btn-outline-secondary btn-sm me-3 d-flex align-items-center justify-content-center text-white" title="Voltar" onclick="voltarParaOperacoes()" style="width:40px;height:38px;border-color:#555;">
           <i class="bi bi-arrow-left fs-5"></i>
         </button>
         <h3 id="tituloOperacao" class="m-0 text-white fw-bold">---</h3>
       </div>
-
     </div>
-    
+
     <input type="hidden" id="idOpAtiva" value="">
-    
+
     <ul class="nav nav-tabs" id="abasOperacao" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active fw-bold" id="sco-tab" data-bs-toggle="tab" data-bs-target="#sco" type="button" role="tab" aria-controls="sco" aria-selected="true" style="color: #0dcaf0 !important;">
+        <button class="nav-link active fw-bold" id="sco-tab" data-bs-toggle="tab" data-bs-target="#sco" type="button" role="tab" style="color:#0dcaf0 !important;">
           <i class="bi bi-journal-text"></i> Formulários SCO
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="vitimas-tab" data-bs-toggle="tab" data-bs-target="#vitimas" type="button" role="tab" aria-controls="vitimas"><i class="bi bi-person-vcard"></i> REGISTRO DE VÍTIMAS</button>
+        <button class="nav-link" id="vitimas-tab" data-bs-toggle="tab" data-bs-target="#vitimas" type="button" role="tab">
+          <i class="bi bi-person-vcard"></i> REGISTRO DE VÍTIMAS
+        </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="efetivo-tab" data-bs-toggle="tab" data-bs-target="#efetivo" type="button" role="tab" aria-controls="efetivo">CADASTRO DE EFETIVO</button>
+        <button class="nav-link" id="efetivo-tab" data-bs-toggle="tab" data-bs-target="#efetivo" type="button" role="tab">
+          CADASTRO DE EFETIVO
+        </button>
       </li>
     </ul>
 
     <div class="tab-content p-4 shadow" id="conteudoAbas">
-      <div class="tab-pane fade show active" id="sco" role="tabpanel" aria-labelledby="sco-tab"><?!= include('SCO'); ?></div>
-      <div class="tab-pane fade" id="vitimas" role="tabpanel" aria-labelledby="vitimas-tab"><?!= include('Vitimas'); ?></div>
-      <div class="tab-pane fade" id="efetivo" role="tabpanel" aria-labelledby="efetivo-tab"><?!= include('efetivo'); ?></div>
-    </div>
-
-</div>
+      <div class="tab-pane fade show active" id="sco" role="tabpanel"><?!= include('SCO'); ?></div>
+      <div class="tab-pane fade" id="vitimas" role="tabpanel"><?!= include('Vitimas'); ?></div>
+      <div class="tab-pane fade" id="efetivo" role="tabpanel"><?!= include('efetivo'); ?></div>
     </div>
   </div>
 
+  <!-- ==================== MODAL NOVA / EDITAR OPERAÇÃO ==================== -->
   <div class="modal fade" id="modalNovaOperacao" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 80%;">      
+    <div class="modal-dialog modal-dialog-centered" style="max-width:80%;">
       <div class="modal-content bg-dark text-light border-secondary">
         <div class="modal-header border-secondary">
           <h5 class="modal-title fw-bold text-uppercase"><i class="bi bi-plus-circle text-success"></i> Nova Operação</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        
         <div class="modal-body">
           <form id="formNovaOperacao">
             <input type="hidden" id="novaOp_id">
@@ -239,7 +235,6 @@
             </div>
           </form>
         </div>
-        
         <div class="modal-footer border-secondary">
           <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" class="btn btn-success fw-bold" id="btnSalvarOp" onclick="salvarNovaOperacao()"><i class="bi bi-save"></i> Gravar Operação</button>
@@ -248,222 +243,82 @@
     </div>
   </div>
 
-  <div class="modal fade" id="modalLogin" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content bg-dark text-light border-warning" style="box-shadow: 0 0 20px rgba(255, 193, 7, 0.2);">
-        <div class="modal-header border-secondary text-center d-block relative">
-          <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
-          <h5 class="modal-title fw-bold text-uppercase mt-2">
-            <i class="bi bi-shield-lock text-warning fs-1 d-block mb-2"></i>
-            Acesso ao Hub de Operações
-          </h5>
-        </div>
-        <div class="modal-body px-4 pb-4">
-          <p class="text-info small text-center fw-bold mb-4" id="loginMensagemCob">Acessando painel...</p>
-          <div class="mb-3">
-            <label class="form-label text-warning small fw-bold">USUÁRIO</label>
-            <input type="text" id="loginUsuario" class="form-control bg-black text-white border-secondary text-center" placeholder="Digite seu usuário">
-          </div>
-          <div class="mb-4">
-            <label class="form-label text-warning small fw-bold">SENHA</label>
-            <input type="password" id="loginSenha" class="form-control bg-black text-white border-secondary text-center" placeholder="Digite sua senha">
-          </div>
-          <button type="button" class="btn btn-warning fw-bold w-100" id="btnEntrar" onclick="fazerLogin()">
-            <i class="bi bi-box-arrow-in-right"></i> ENTRAR
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  
+
   <script>
 
-   
+    let cobAtivo = "GERAL";
+    let operacoesGlobais = [];
 
-    let cobAtivo = "";
-    let cobTentativa = ""; 
-    let operacoesGlobais = []; 
-
-    // Dicionário de Mapas por COB
-    const linksMapaPorCob = {
-      "1º COB": "https://geoprocessamento.bombeiros.mg.gov.br/portal/apps/experiencebuilder/experience/?id=9c4cc68a45ff4b8cb6f6c4dea2d6985a",
-      "2º COB": "https://geoprocessamento.bombeiros.mg.gov.br/portal/apps/experiencebuilder/experience/?id=8e3df9a3937a43b699f8a27eb7548b2b",
-      "3º COB": "https://geoprocessamento.bombeiros.mg.gov.br/portal/apps/experiencebuilder/experience/?id=6015911153f3437b963880993425fa3b",
-      "4º COB": "https://geoprocessamento.bombeiros.mg.gov.br/portal/apps/experiencebuilder/experience/?id=4a0f59abcc3a4cb9814bc530bddfb6c7",
-      "5º COB": "https://geoprocessamento.bombeiros.mg.gov.br/portal/apps/experiencebuilder/experience/?id=ab316f6b0db845e2b28a6504e68c85a0",
-      "6º COB": "https://geoprocessamento.bombeiros.mg.gov.br/portal/apps/experiencebuilder/experience/?id=868f9a6e98a04f138707d048a8dc9d15",
-      "CEB":    "https://geoprocessamento.bombeiros.mg.gov.br/portal/apps/experiencebuilder/experience/?id=SEU_LINK_CEB" // Caso tenha um mapa geral
-    };
-
-    function abrirCob(nomeCob) {
-  cobTentativa = nomeCob; 
-  const perfilAtual = sessionStorage.getItem("perfilLogado");
-  
-  if (perfilAtual) {
-    if (perfilAtual === "CEB" || perfilAtual === cobTentativa) {
-       carregarPainelCob(cobTentativa); 
-       return;
-    } else {
-       Swal.fire({ icon: 'error', title: 'Acesso Bloqueado', text: `Seu usuário (${perfilAtual}) não tem permissão para o ${cobTentativa}.`, background: '#1a1a1a', color: '#fff' });
-       return;
-    }
-  }
-  
-  document.getElementById('loginMensagemCob').innerText = `ACESSANDO: ${nomeCob}`;
-  document.getElementById('loginUsuario').value = "";
-  document.getElementById('loginSenha').value = "";
-  
-  // Puxa o modal de login para a frente
-  const modalEl = document.getElementById('modalLogin');
-  document.body.appendChild(modalEl);
-  
-  var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-  modal.show();
-}
-
-    function fazerLogin() {
-      const usuario = document.getElementById('loginUsuario').value.trim();
-      const senha = document.getElementById('loginSenha').value.trim();
-      const btn = document.getElementById('btnEntrar');
-
-      if(!usuario || !senha) {
-        Swal.fire({ icon: 'warning', title: 'Atenção', text: 'Preencha usuário e senha!', background: '#1a1a1a', color: '#fff' });
-        return;
-      }
-
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Validando...';
-
-      if (typeof google !== 'undefined' && google.script) {
-        google.script.run
-          .withSuccessHandler(function(resposta) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> ENTRAR';
-            
-            if(resposta.sucesso) {
-              sessionStorage.setItem("perfilLogado", resposta.perfil);
-              sessionStorage.setItem("usuarioLogado", usuario);
-              bootstrap.Modal.getOrCreateInstance(document.getElementById('modalLogin')).hide();
-              carregarPainelCob(cobTentativa);
-            } else {
-              Swal.fire({ icon: 'error', title: 'Acesso Negado', text: resposta.mensagem, background: '#1a1a1a', color: '#fff', confirmButtonColor: '#d33' });
-            }
-          })
-          .withFailureHandler(function(erro) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> ACESSAR';
-            Swal.fire({ icon: 'error', title: 'Erro', text: 'Falha de conexão.', background: '#1a1a1a', color: '#fff' });
-          })
-          .validarLoginGS(usuario, senha, cobTentativa);
-      } else {
-        // MODO LOCAL
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> ENTRAR';
-        sessionStorage.setItem("perfilLogado", cobTentativa);
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalLogin')).hide();
-        carregarPainelCob(cobTentativa);
-      }
-    }
-
-    function carregarPainelCob(nomeCob) {
-      cobAtivo = nomeCob;
+    // ==========================================
+    // NAVEGAÇÃO PRINCIPAL
+    // ==========================================
+    function entrarOperacoes() {
+      cobAtivo = "GERAL";
       document.getElementById('viewHub').style.display = 'none';
       document.getElementById('viewInterna').style.display = 'none';
       document.getElementById('viewOperacoes').style.display = 'block';
-      document.getElementById('tituloPainelCob').innerText = 'OPERAÇÕES ' + cobAtivo;
+      document.getElementById('tituloPainelCob').innerText = 'OPERAÇÕES';
       document.getElementById('gridCartoes').innerHTML = '<div class="col-12 text-center text-warning mt-5"><div class="spinner-border" role="status"></div><h5 class="mt-3 text-secondary">Buscando operações...</h5></div>';
-      
+
       if (typeof google !== 'undefined' && google.script) {
         google.script.run
           .withSuccessHandler(function(listaReal) {
-            operacoesGlobais = listaReal.filter(op => op.cob === cobAtivo);
+            operacoesGlobais = listaReal || [];
             inicializarFiltrosOp(operacoesGlobais);
           })
-          .withFailureHandler(function(erro) {
-            document.getElementById('gridCartoes').innerHTML = '<div class="col-12 text-center text-danger mt-5"><h5>Erro ao buscar dados.</h5></div>';
+          .withFailureHandler(function() {
+            document.getElementById('gridCartoes').innerHTML = '<div class="col-12 text-center text-danger mt-5"><h5>Erro ao buscar operações.</h5></div>';
           })
           .getOperacoes();
       } else {
-        setTimeout(() => {
-          operacoesGlobais = [{ id: 1, nome: "OPERAÇÃO TESTE LOCAL", cob: cobAtivo, municipio: "Belo Horizonte", inicio: "19/06/2026 10:00", termino: "-", comandante: "Sgt Local", status: "Em Andamento" }];
-          inicializarFiltrosOp(operacoesGlobais);
-        }, 1000);
+        operacoesGlobais = [{ id: 1, nome: "OP RESGATE VENEZUELA", cob: "GERAL", municipio: "Caracas", inicio: "01/07/2026 08:00", termino: "-", comandante: "Cmt Incidente", status: "Em Andamento" }];
+        inicializarFiltrosOp(operacoesGlobais);
       }
     }
 
     function voltarAoHub() {
-
-      document.body.classList.replace('fundo-interno', 'fundo-hub');
-
       document.getElementById('viewOperacoes').style.display = 'none';
       document.getElementById('viewInterna').style.display = 'none';
-      document.getElementById('viewHub').style.display = 'block';
+      document.getElementById('viewHub').style.display = 'flex';
       atualizarContadoresMapa();
     }
 
     function abrirOperacao(id, nome) {
-      document.body.classList.replace('fundo-hub', 'fundo-interno');
+      document.body.classList.add('fundo-interno');
       const opSelecionada = operacoesGlobais.find(o => String(o.id) === String(id));
-      
-      // O nome base da operação fica com a cor padrão (branco)
-      let tituloHTML = nome; 
-      
+
+      let tituloHTML = nome;
       if (opSelecionada) {
         let duracao = calcularDuracao(opSelecionada.inicio, opSelecionada.termino, opSelecionada.status);
-        
-        // Adiciona o DIA em Dourado (text-warning)
-        if (duracao) {
-          tituloHTML += ` <span class="text-warning">(${duracao})</span>`;
-        }
-        
-        // Adiciona a UC em Azul (text-info) e com a fonte um pouco menor
+        if (duracao) tituloHTML += ` <span class="text-warning">(${duracao})</span>`;
         if (opSelecionada.uc && opSelecionada.uc.trim() !== '' && opSelecionada.uc !== "Nenhuma / Não se aplica") {
-          tituloHTML += ` <span class="text-info" style="font-size: 1rem; font-weight: 600;">- ${opSelecionada.uc}</span>`;
+          tituloHTML += ` <span class="text-info" style="font-size:1rem;font-weight:600;">- ${opSelecionada.uc}</span>`;
         }
       }
 
-      // ==========================================================
-      // NOVO: INJEÇÃO DO MAPA OPERACIONAL (ARCGIS)
-      // ==========================================================
-      const iframeGis = document.getElementById('iframeMapaOperacional');
-      if (iframeGis) {
-        // Puxa o link correto baseado no COB que está ativo
-        const linkCorreto = linksMapaPorCob[cobAtivo] || ""; 
-        
-        // Só atualiza o iframe se o link for diferente do atual
-        if (iframeGis.src !== linkCorreto) {
-          iframeGis.src = linkCorreto;
-        }
-      }
-      // ==========================================================
-
-      // Oculta as outras telas e mostra a tela interna
       document.getElementById('viewHub').style.display = 'none';
       document.getElementById('viewOperacoes').style.display = 'none';
       document.getElementById('viewInterna').style.display = 'block';
-      
-      // Usamos innerHTML para que o navegador renderize as cores e tamanhos das tags <span>
       document.getElementById('tituloOperacao').innerHTML = tituloHTML;
       document.getElementById('idOpAtiva').value = id;
-      
-      window.dispatchEvent(new CustomEvent('operacaoAberta', { detail: { idOp: id } }));
 
-      // SCO é a aba ativa por padrão e só recarregava ao clicar na aba; força o load aqui.
+      window.dispatchEvent(new CustomEvent('operacaoAberta', { detail: { idOp: id } }));
       if (typeof recarregarSCO === 'function') recarregarSCO();
     }
 
     function voltarParaOperacoes() {
-
-      document.body.classList.replace('fundo-interno', 'fundo-hub');
-      abrirCob(cobAtivo);
+      document.body.classList.remove('fundo-interno');
+      entrarOperacoes();
     }
 
+    // ==========================================
+    // RENDERIZAÇÃO DOS CARDS
+    // ==========================================
     function renderizarCartoes(lista) {
       const container = document.getElementById('gridCartoes');
-      container.innerHTML = ''; 
-      if(lista.length === 0) {
+      container.innerHTML = '';
+      if (lista.length === 0) {
         container.innerHTML = '<div class="col-12 text-center text-secondary mt-4"><h5>Nenhuma operação encontrada.</h5></div>';
         return;
       }
@@ -471,21 +326,20 @@
         let corBadge = op.status === 'Em Andamento' ? 'bg-success' : 'bg-danger';
         let corBorda = op.status === 'Em Andamento' ? 'border-success' : 'border-danger';
         let textoLocal = op.municipio;
-        if (op.uc && op.uc.trim() !== '' && op.uc !== 'Nenhuma / Não se aplica') { textoLocal += ` - ${op.uc}`; }
-        
-        let duracaoExibicao = op.duracao;
-        if (op.status === 'Em Andamento') {
-          duracaoExibicao = calcularDuracao(op.inicio, op.termino, op.status);
-        }
+        if (op.uc && op.uc.trim() !== '' && op.uc !== 'Nenhuma / Não se aplica') textoLocal += ` - ${op.uc}`;
 
-        let cardHTML = `
+        let duracaoExibicao = op.status === 'Em Andamento'
+          ? calcularDuracao(op.inicio, op.termino, op.status)
+          : op.duracao;
+
+        container.innerHTML += `
           <div class="col-12 col-md-6 col-xl-4">
-            <div class="card bg-dark text-light border ${corBorda} h-100 card-op" style="border-width: 2px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+            <div class="card bg-dark text-light border ${corBorda} h-100 card-op" style="border-width:2px!important;box-shadow:0 4px 8px rgba(0,0,0,0.3);">
               <div class="card-body">
                 <div class="mb-3"><span class="badge ${corBadge} text-uppercase px-2 py-1">${op.status}</span></div>
                 <h5 class="card-title fw-bold text-uppercase mb-1">${op.nome}</h5>
                 <p class="text-info small mb-3"><i class="bi bi-geo-alt-fill"></i> ${textoLocal}</p>
-                <div class="small" style="color: #bbb;">
+                <div class="small" style="color:#bbb;">
                   <div class="d-flex justify-content-between border-bottom border-secondary pb-1 mb-1">
                     <span><i class="bi bi-calendar-event"></i> Início:</span> <span class="text-white">${op.inicio}</span>
                   </div>
@@ -500,7 +354,7 @@
                   </div>
                 </div>
                 <div class="mt-2 pt-2 border-top border-secondary">
-                  <div class="text-secondary small fw-bold mb-1" style="font-size: 0.70rem;">RESUMO RECURSOS:</div>
+                  <div class="text-secondary small fw-bold mb-1" style="font-size:0.70rem;">RESUMO RECURSOS:</div>
                   <div class="d-flex justify-content-between text-white small">
                     <span><i class="bi bi-people-fill text-info"></i> EFETIVO: <strong class="fs-6 text-light">${op.efetivo || 0}</strong></span>
                     <span><i class="bi bi-truck text-info"></i> VTRS: <strong class="fs-6 text-light">${op.vtrs || 0}</strong></span>
@@ -508,273 +362,192 @@
                 </div>
               </div>
               <div class="card-footer bg-transparent border-0 pt-0 d-flex gap-2">
-                <button class="btn btn-outline-primary btn-sm flex-grow-0" title="Editar Operação" onclick="abrirModalEditarOp('${op.id}')"><i class="bi bi-pencil-square"></i></button>
+                <button class="btn btn-outline-primary btn-sm flex-grow-0" title="Editar" onclick="abrirModalEditarOp('${op.id}')"><i class="bi bi-pencil-square"></i></button>
                 <button class="btn btn-success btn-sm flex-grow-1 fw-bold" onclick="abrirOperacao('${op.id}', '${op.nome}')">Acessar Painel <i class="bi bi-arrow-right-circle ms-1"></i></button>
               </div>
             </div>
-          </div>
-        `;
-        container.innerHTML += cardHTML;
+          </div>`;
       });
     }
 
-    let fpFiltroInicio, fpFiltroFim;
-    let tomSelectFiltroMunicipio;
+    // ==========================================
+    // FILTROS
+    // ==========================================
+    let fpFiltroInicio, fpFiltroFim, tomSelectFiltroMunicipio;
 
     function inicializarFiltrosOp(lista) {
       if (!fpFiltroInicio) {
         fpFiltroInicio = flatpickr("#filtroDataInicio", { locale: "pt", dateFormat: "d/m/Y", onChange: filtrarCards });
-        fpFiltroFim = flatpickr("#filtroDataFim", { locale: "pt", dateFormat: "d/m/Y", onChange: filtrarCards });
+        fpFiltroFim    = flatpickr("#filtroDataFim",    { locale: "pt", dateFormat: "d/m/Y", onChange: filtrarCards });
       }
-
       const selectMun = document.getElementById('filtroMunicipio');
       selectMun.innerHTML = '<option value="">Todos</option>';
-      const municipiosUnicos = [...new Set(lista.map(op => op.municipio).filter(Boolean))].sort();
-      municipiosUnicos.forEach(mun => {
-        let partes = mun.split(',').map(m => m.trim());
-        partes.forEach(p => {
-           if(p && !selectMun.querySelector(`option[value="${p}"]`)) {
-              let opt = document.createElement('option'); opt.value = p; opt.textContent = p;
-              selectMun.appendChild(opt);
-           }
+      [...new Set(lista.map(op => op.municipio).filter(Boolean))].sort().forEach(mun => {
+        mun.split(',').map(m => m.trim()).forEach(p => {
+          if (p && !selectMun.querySelector(`option[value="${p}"]`)) {
+            let opt = document.createElement('option'); opt.value = p; opt.textContent = p;
+            selectMun.appendChild(opt);
+          }
         });
       });
-
       if (tomSelectFiltroMunicipio) tomSelectFiltroMunicipio.destroy();
-      tomSelectFiltroMunicipio = new TomSelect("#filtroMunicipio", {
-        create: false, sortField: { field: "text", direction: "asc" }, onChange: filtrarCards
-      });
-
+      tomSelectFiltroMunicipio = new TomSelect("#filtroMunicipio", { create: false, sortField: { field: "text", direction: "asc" }, onChange: filtrarCards });
       document.getElementById('filtroStatus').addEventListener('change', filtrarCards);
       document.getElementById('filtroChamada').addEventListener('input', filtrarCards);
       document.getElementById('btnLimparFiltros').addEventListener('click', limparFiltrosListagem);
-
-      limparFiltrosListagem(); 
+      limparFiltrosListagem();
     }
 
     function filtrarCards() {
-      const statusVal = document.getElementById('filtroStatus').value;
+      const statusVal   = document.getElementById('filtroStatus').value;
       const municipioVal = document.getElementById('filtroMunicipio').value;
-      const chamadaVal = document.getElementById('filtroChamada').value.toLowerCase().trim();
-      const dataIniVal = document.getElementById('filtroDataInicio').value;
-      const dataFimVal = document.getElementById('filtroDataFim').value;
+      const chamadaVal  = document.getElementById('filtroChamada').value.toLowerCase().trim();
+      const dataIniVal  = document.getElementById('filtroDataInicio').value;
+      const dataFimVal  = document.getElementById('filtroDataFim').value;
 
-      let filtrados = operacoesGlobais.filter(op => {
-        let matchStatus = (statusVal === 'Todas') || (op.status === statusVal);
-        let matchMunicipio = !municipioVal || (op.municipio && op.municipio.includes(municipioVal));
-        let matchChamada = !chamadaVal || (op.chamada && op.chamada.toLowerCase().includes(chamadaVal));
-        
-        let matchData = true;
+      renderizarCartoes(operacoesGlobais.filter(op => {
+        if ((statusVal !== 'Todas') && op.status !== statusVal) return false;
+        if (municipioVal && !(op.municipio && op.municipio.includes(municipioVal))) return false;
+        if (chamadaVal && !(op.chamada && op.chamada.toLowerCase().includes(chamadaVal))) return false;
         if (dataIniVal || dataFimVal) {
-          if (!op.inicio || op.inicio === "-") {
-            matchData = false;
-          } else {
-            const partesData = op.inicio.split(' ')[0].split('/');
-            if (partesData.length === 3) {
-                const dataOp = new Date(partesData[2], partesData[1] - 1, partesData[0]);
-                if (dataIniVal) {
-                  const pIni = dataIniVal.split('/');
-                  if (dataOp < new Date(pIni[2], pIni[1] - 1, pIni[0])) matchData = false;
-                }
-                if (dataFimVal) {
-                  const pFim = dataFimVal.split('/');
-                  if (dataOp > new Date(pFim[2], pFim[1] - 1, pFim[0])) matchData = false;
-                }
-            }
+          if (!op.inicio || op.inicio === "-") return false;
+          const p = op.inicio.split(' ')[0].split('/');
+          if (p.length === 3) {
+            const dataOp = new Date(p[2], p[1]-1, p[0]);
+            if (dataIniVal) { const i = dataIniVal.split('/'); if (dataOp < new Date(i[2],i[1]-1,i[0])) return false; }
+            if (dataFimVal) { const f = dataFimVal.split('/'); if (dataOp > new Date(f[2],f[1]-1,f[0])) return false; }
           }
         }
-        return matchStatus && matchMunicipio && matchChamada && matchData;
-      });
-
-      renderizarCartoes(filtrados);
+        return true;
+      }));
     }
 
     function limparFiltrosListagem() {
       document.getElementById('filtroStatus').value = "Em Andamento";
       document.getElementById('filtroChamada').value = "";
-      if(fpFiltroInicio) fpFiltroInicio.clear();
-      if(fpFiltroFim) fpFiltroFim.clear();
-      if(tomSelectFiltroMunicipio) tomSelectFiltroMunicipio.setValue("");
+      if (fpFiltroInicio) fpFiltroInicio.clear();
+      if (fpFiltroFim) fpFiltroFim.clear();
+      if (tomSelectFiltroMunicipio) tomSelectFiltroMunicipio.setValue("");
       filtrarCards();
     }
 
-    let tomSelectMunicipios = null;
-    let tomSelectUC = null;
+    // ==========================================
+    // MODAL NOVA / EDITAR OPERAÇÃO
+    // ==========================================
+    let tomSelectMunicipios = null, tomSelectUC = null;
 
     function mascaraChamada(obj) {
-      let v = obj.value.replace(/\D/g, ''); 
-      if (v.length > 13) v = v.substring(0, 13); 
-      if (v.length > 12) { v = v.replace(/^(\d{4})(\d{8})(\d{1})/, "$1-$2-$3"); } 
-      else if (v.length > 4) { v = v.replace(/^(\d{4})(\d+)/, "$1-$2"); }
+      let v = obj.value.replace(/\D/g, '');
+      if (v.length > 13) v = v.substring(0, 13);
+      if (v.length > 12)     v = v.replace(/^(\d{4})(\d{8})(\d{1})/, "$1-$2-$3");
+      else if (v.length > 4) v = v.replace(/^(\d{4})(\d+)/, "$1-$2");
       obj.value = v;
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-  // Apenas chamadas de inicialização do servidor
-  if (typeof google !== 'undefined' && google.script) {
-    google.script.run.withSuccessHandler(preencherMunicipios).getMunicipiosMG();
-    google.script.run.withSuccessHandler(preencherUCs).getUCs();
-  }
-  atualizarContadoresMapa();
-});
+      if (typeof google !== 'undefined' && google.script) {
+        google.script.run.withSuccessHandler(preencherMunicipios).getMunicipiosMG();
+        google.script.run.withSuccessHandler(preencherUCs).getUCs();
+      }
+      atualizarContadoresMapa();
+    });
 
     function preencherMunicipios(lista) {
-      const select = document.getElementById('novaOp_municipio');
-      lista.forEach(mun => {
-        let opt = document.createElement('option');
-        opt.value = mun; opt.text = mun; select.appendChild(opt);
-      });
+      const s = document.getElementById('novaOp_municipio');
+      lista.forEach(mun => { let o = document.createElement('option'); o.value = mun; o.text = mun; s.appendChild(o); });
       tomSelectMunicipios = new TomSelect("#novaOp_municipio", { plugins: ['remove_button'], create: false, sortField: { field: "text", direction: "asc" } });
     }
 
     function preencherUCs(lista) {
-      const select = document.getElementById('novaOp_uc');
-      lista.forEach(uc => {
-        let opt = document.createElement('option');
-        opt.value = uc; opt.text = uc; select.appendChild(opt);
-      });
+      const s = document.getElementById('novaOp_uc');
+      lista.forEach(uc => { let o = document.createElement('option'); o.value = uc; o.text = uc; s.appendChild(o); });
       tomSelectUC = new TomSelect("#novaOp_uc", { create: false, sortField: { field: "text", direction: "asc" }, maxItems: 1 });
     }
 
-    // ==========================================
-// 1. ABRIR MODAL NOVA OPERAÇÃO
-// ==========================================
-function abrirModalNovaOp() {
-  document.querySelector('#modalNovaOperacao .modal-title').innerHTML = '<i class="bi bi-plus-circle text-success"></i> Nova Operação';
-  document.getElementById('formNovaOperacao').reset();
-  document.getElementById('novaOp_id').value = "OP-" + new Date().getTime();
-  document.getElementById('novaOp_cob').value = cobAtivo;
-  document.getElementById('novaOp_termino').value = "";
-
-  if(tomSelectMunicipios) tomSelectMunicipios.clear();
-  if(tomSelectUC) tomSelectUC.clear();
-
-  // 1. Puxa o modal para a frente (Resolve a tela opaca)
-  const modalEl = document.getElementById('modalNovaOperacao');
-  document.body.appendChild(modalEl); 
-  
-  // 2. Limpa o calendário velho e cria um novo imune ao bug do Bootstrap
-  const inputInicio = document.getElementById('novaOp_inicio');
-  if (inputInicio._flatpickr) {
-      inputInicio._flatpickr.destroy();
-  }
-  
-  flatpickr(inputInicio, { 
-      enableTime: true, 
-      dateFormat: "d/m/Y H:i", 
-      locale: "pt", 
-      time_24hr: true,
-      static: true // <--- A MÁGICA: Prende o calendário dentro do modal!
-  });
-
-  // 3. Mostra o modal
-  var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-  modal.show();
-}
-
-// ==========================================
-// 2. ABRIR MODAL EDITAR OPERAÇÃO
-// ==========================================
-function abrirModalEditarOp(idOp) {
-  const op = operacoesGlobais.find(o => String(o.id) === String(idOp));
-  if (!op) return;
-
-  document.querySelector('#modalNovaOperacao .modal-title').innerHTML = '<i class="bi bi-pencil-square text-primary"></i> Editar Operação';
-  document.getElementById('novaOp_id').value = op.id; 
-  document.getElementById('novaOp_nome').value = op.nome;
-  document.getElementById('novaOp_cob').value = op.cob;
-  document.getElementById('novaOp_chamada').value = op.chamada;
-  document.getElementById('novaOp_cmt').value = op.comandante !== "Não Informado" ? op.comandante : "";
-  document.getElementById('novaOp_status').value = op.status;
-  document.getElementById('novaOp_termino').value = op.termino !== "-" ? op.termino : "";
-
-  // 1. Puxa o modal para a frente
-  const modalEl = document.getElementById('modalNovaOperacao');
-  document.body.appendChild(modalEl);
-
-  // 2. Destrói e recria o calendário
-  const inputInicio = document.getElementById('novaOp_inicio');
-  if (inputInicio._flatpickr) {
-      inputInicio._flatpickr.destroy();
-  }
-  
-  flatpickr(inputInicio, { 
-      enableTime: true, 
-      dateFormat: "d/m/Y H:i", 
-      locale: "pt", 
-      time_24hr: true,
-      static: true // <--- A MÁGICA
-  });
-  
-  // Define a data que veio do banco de dados
-  inputInicio._flatpickr.setDate(op.inicio, true, "d/m/Y H:i");
-
-  if (tomSelectMunicipios) {
-    tomSelectMunicipios.clear();
-    if (op.municipio) {
-      let muns = op.municipio.split(',').map(m => m.trim());
-      muns.forEach(m => tomSelectMunicipios.addItem(m));
+    function abrirModalNovaOp() {
+      document.querySelector('#modalNovaOperacao .modal-title').innerHTML = '<i class="bi bi-plus-circle text-success"></i> Nova Operação';
+      document.getElementById('formNovaOperacao').reset();
+      document.getElementById('novaOp_id').value = "OP-" + new Date().getTime();
+      document.getElementById('novaOp_cob').value = cobAtivo;
+      document.getElementById('novaOp_termino').value = "";
+      if (tomSelectMunicipios) tomSelectMunicipios.clear();
+      if (tomSelectUC) tomSelectUC.clear();
+      const modalEl = document.getElementById('modalNovaOperacao');
+      document.body.appendChild(modalEl);
+      const inp = document.getElementById('novaOp_inicio');
+      if (inp._flatpickr) inp._flatpickr.destroy();
+      flatpickr(inp, { enableTime: true, dateFormat: "d/m/Y H:i", locale: "pt", time_24hr: true, static: true });
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
     }
-  }
 
-  if (tomSelectUC) {
-    tomSelectUC.clear();
-    if (op.uc && op.uc !== 'Nenhuma / Não se aplica') { tomSelectUC.addItem(op.uc); }
-  }
-
-  // 3. Mostra o modal
-  var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-  modal.show();
-}
+    function abrirModalEditarOp(idOp) {
+      const op = operacoesGlobais.find(o => String(o.id) === String(idOp));
+      if (!op) return;
+      document.querySelector('#modalNovaOperacao .modal-title').innerHTML = '<i class="bi bi-pencil-square text-primary"></i> Editar Operação';
+      document.getElementById('novaOp_id').value = op.id;
+      document.getElementById('novaOp_nome').value = op.nome;
+      document.getElementById('novaOp_cob').value = op.cob;
+      document.getElementById('novaOp_chamada').value = op.chamada;
+      document.getElementById('novaOp_cmt').value = op.comandante !== "Não Informado" ? op.comandante : "";
+      document.getElementById('novaOp_status').value = op.status;
+      document.getElementById('novaOp_termino').value = op.termino !== "-" ? op.termino : "";
+      const modalEl = document.getElementById('modalNovaOperacao');
+      document.body.appendChild(modalEl);
+      const inp = document.getElementById('novaOp_inicio');
+      if (inp._flatpickr) inp._flatpickr.destroy();
+      flatpickr(inp, { enableTime: true, dateFormat: "d/m/Y H:i", locale: "pt", time_24hr: true, static: true });
+      inp._flatpickr.setDate(op.inicio, true, "d/m/Y H:i");
+      if (tomSelectMunicipios) {
+        tomSelectMunicipios.clear();
+        if (op.municipio) op.municipio.split(',').map(m => m.trim()).forEach(m => tomSelectMunicipios.addItem(m));
+      }
+      if (tomSelectUC) {
+        tomSelectUC.clear();
+        if (op.uc && op.uc !== 'Nenhuma / Não se aplica') tomSelectUC.addItem(op.uc);
+      }
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
 
     function calcularTermino() {
       const status = document.getElementById('novaOp_status').value;
-      const campoTermino = document.getElementById('novaOp_termino');
+      const campo  = document.getElementById('novaOp_termino');
       if (status === 'Concluída') {
         const agora = new Date();
-        const dia = String(agora.getDate()).padStart(2, '0');
-        const mes = String(agora.getMonth() + 1).padStart(2, '0');
-        const ano = agora.getFullYear();
-        const hora = String(agora.getHours()).padStart(2, '0');
-        const min = String(agora.getMinutes()).padStart(2, '0');
-        campoTermino.value = `${dia}/${mes}/${ano} ${hora}:${min}`; 
+        campo.value = `${String(agora.getDate()).padStart(2,'0')}/${String(agora.getMonth()+1).padStart(2,'0')}/${agora.getFullYear()} ${String(agora.getHours()).padStart(2,'0')}:${String(agora.getMinutes()).padStart(2,'0')}`;
       } else {
-        campoTermino.value = ''; 
+        campo.value = '';
       }
     }
 
     function salvarNovaOperacao() {
       const btnSalvar = document.getElementById('btnSalvarOp');
       const dados = {
-          id: document.getElementById('novaOp_id').value,
-          nome: document.getElementById('novaOp_nome').value.toUpperCase(),
-          cob: document.getElementById('novaOp_cob').value,
-          municipios: tomSelectMunicipios ? tomSelectMunicipios.getValue().join(', ') : '',
-          chamada: document.getElementById('novaOp_chamada').value,
-          cmt: document.getElementById('novaOp_cmt').value.toUpperCase(),
-          uc: tomSelectUC ? tomSelectUC.getValue() : '',
-          status: document.getElementById('novaOp_status').value,
-          inicio: document.getElementById('novaOp_inicio').value,
-          termino: document.getElementById('novaOp_termino').value,
-          duracao: calcularDuracao(document.getElementById('novaOp_inicio').value, document.getElementById('novaOp_termino').value, document.getElementById('novaOp_status').value)
+        id:        document.getElementById('novaOp_id').value,
+        nome:      document.getElementById('novaOp_nome').value.toUpperCase(),
+        cob:       document.getElementById('novaOp_cob').value,
+        municipios: tomSelectMunicipios ? tomSelectMunicipios.getValue().join(', ') : '',
+        chamada:   document.getElementById('novaOp_chamada').value,
+        cmt:       document.getElementById('novaOp_cmt').value.toUpperCase(),
+        uc:        tomSelectUC ? tomSelectUC.getValue() : '',
+        status:    document.getElementById('novaOp_status').value,
+        inicio:    document.getElementById('novaOp_inicio').value,
+        termino:   document.getElementById('novaOp_termino').value,
+        duracao:   calcularDuracao(document.getElementById('novaOp_inicio').value, document.getElementById('novaOp_termino').value, document.getElementById('novaOp_status').value)
       };
-
-      if(!dados.nome || !dados.inicio || !dados.municipios) {
-          Swal.fire({ icon: 'warning', title: 'Atenção', text: 'Por favor, preencha o Nome, os Municípios e a Data de Início!', background: '#1a1a1a', color: '#fff', confirmButtonColor: '#ff9800' });
-          return;
+      if (!dados.nome || !dados.inicio || !dados.municipios) {
+        Swal.fire({ icon: 'warning', title: 'Atenção', text: 'Preencha o Nome, os Municípios e a Data de Início!', background: '#1a1a1a', color: '#fff', confirmButtonColor: '#ff9800' });
+        return;
       }
-
       btnSalvar.disabled = true;
-      btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Gravando...';
-
+      btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Gravando...';
       if (typeof google !== 'undefined' && google.script) {
-          google.script.run.withSuccessHandler(() => {
-              btnSalvar.disabled = false;
-              btnSalvar.innerHTML = '<i class="bi bi-save"></i> Gravar Operação';
-              bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNovaOperacao')).hide();
-              Swal.fire({ icon: 'success', title: 'Sucesso', text: 'Operação salva com sucesso.', background: '#1a1a1a', color: '#fff', showConfirmButton: false, timer: 2000 });
-              abrirCob(cobAtivo);
-          }).salvarOperacaoPlanilha(dados);
+        google.script.run.withSuccessHandler(() => {
+          btnSalvar.disabled = false;
+          btnSalvar.innerHTML = '<i class="bi bi-save"></i> Gravar Operação';
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNovaOperacao')).hide();
+          Swal.fire({ icon: 'success', title: 'Sucesso', text: 'Operação salva com sucesso.', background: '#1a1a1a', color: '#fff', showConfirmButton: false, timer: 2000 });
+          entrarOperacoes();
+        }).salvarOperacaoPlanilha(dados);
       }
     }
 
@@ -782,130 +555,47 @@ function abrirModalEditarOp(idOp) {
       if (!inicioStr) return "";
       const parseData = (str) => {
         if (!str || str === "-") return new Date();
-        const partes = str.split(" ")[0].split("/");
-        return new Date(partes[2], partes[1] - 1, partes[0]);
+        const p = str.split(" ")[0].split("/");
+        return new Date(p[2], p[1]-1, p[0]);
       };
-      const dInicio = parseData(inicioStr);
-      dInicio.setHours(0, 0, 0, 0); 
-      let dFim = new Date();
-      dFim.setHours(0, 0, 0, 0);
+      const dInicio = parseData(inicioStr); dInicio.setHours(0,0,0,0);
+      let dFim = new Date(); dFim.setHours(0,0,0,0);
       if (status === 'Concluída' && terminoStr && terminoStr !== "-") {
-        dFim = parseData(terminoStr);
-        dFim.setHours(0, 0, 0, 0);
+        dFim = parseData(terminoStr); dFim.setHours(0,0,0,0);
       }
-      const diffTempo = dFim.getTime() - dInicio.getTime();
-      const diffDias = Math.floor(diffTempo / (1000 * 3600 * 24));
-      return "DIA " + (diffDias >= 0 ? diffDias + 1 : 1);
+      const diff = Math.floor((dFim - dInicio) / (1000*3600*24));
+      return "DIA " + (diff >= 0 ? diff + 1 : 1);
     }
 
-    let todasOperacoesHub = []; // Variável global para guardar os dados do mapa instantaneamente
-
-    // 1. A LÓGICA DO MAPA INTERATIVO (HOVER E PANORAMA GERAL)
-function atualizarContadoresMapa() {
-  if (typeof google !== 'undefined' && google.script) {
-    google.script.run.withSuccessHandler(function(listaReal) {
-      todasOperacoesHub = listaReal; // Salva silenciosamente para o hover funcionar rápido
-      
-      // ===============================================
-      // NOVO: CALCULA O PANORAMA GERAL DO ESTADO
-      // ===============================================
-      let totalAndamento = 0;
-      let totalConcluidas = 0;
-      
-      listaReal.forEach(op => {
-        if (op.status === 'Em Andamento') {
-          totalAndamento++;
-        } else if (op.status === 'Concluída') {
-          totalConcluidas++;
-        }
-      });
-      
-      // Injeta os totais no painel fixo
-      const elAndamento = document.getElementById('globalAndamento');
-      const elConcluidas = document.getElementById('globalConcluidas');
-      
-      if (elAndamento) elAndamento.innerText = totalAndamento;
-      if (elConcluidas) elConcluidas.innerText = totalConcluidas;
-      
-    }).getOperacoes();
-  }
-}
-
-    // 2. Função disparada ao PASSAR O MOUSE sobre o COB
-    function mostrarResumoCob(nomeCob) {
-      const painel = document.getElementById('painelHoverCob');
-      const placeholder = document.getElementById('painelHoverPlaceholder');
-      
-      // Filtra as operações que pertencem a esse COB
-      const opsCob = todasOperacoesHub.filter(op => op.cob === nomeCob);
-      
-      let countAndamento = 0;
-      let countConcluidas = 0;
-      let listaHTML = '';
-
-      opsCob.forEach(op => {
-        if(op.status === 'Em Andamento') {
-            countAndamento++;
-            // Calcula qual dia é (DIA 1, DIA 2...)
-            let duracao = calcularDuracao(op.inicio, op.termino, op.status);
-            
-            // Trata a Unidade de Conservação
-            let ucTexto = (op.uc && op.uc.trim() !== '' && op.uc !== 'Nenhuma / Não se aplica') ? ` - <span class="text-secondary">${op.uc}</span>` : '';
-            
-            // Monta a linha
-            listaHTML += `
-              <li class="mb-3 pb-2 border-bottom border-dark">
-                <span class="text-warning fw-bold d-block mb-1"><i class="bi bi-fire text-danger"></i> ${op.nome} (${duracao})</span>
-                <span class="text-light small" style="font-size: 0.8rem;">${ucTexto.replace(' - ', '')}</span>
-              </li>`;
-        } else if (op.status === 'Concluída') {
-            countConcluidas++;
-        }
-      });
-
-      // Se não tiver nada em andamento
-      if (countAndamento === 0) {
-          listaHTML = '<li class="text-secondary small fst-italic">Nenhuma operação ativa no momento.</li>';
+    // ==========================================
+    // CONTADORES DO HUB
+    // ==========================================
+    function atualizarContadoresMapa() {
+      if (typeof google !== 'undefined' && google.script) {
+        google.script.run.withSuccessHandler(function(lista) {
+          let andamento = 0, concluidas = 0;
+          lista.forEach(op => {
+            if (op.status === 'Em Andamento') andamento++;
+            else if (op.status === 'Concluída') concluidas++;
+          });
+          const ea = document.getElementById('globalAndamento');
+          const ec = document.getElementById('globalConcluidas');
+          if (ea) ea.innerText = andamento;
+          if (ec) ec.innerText = concluidas;
+        }).getOperacoes();
       }
-
-      // Preenche os dados no HTML
-      document.getElementById('hoverNomeCob').innerText = nomeCob;
-      document.getElementById('hoverAndamento').innerText = countAndamento;
-      document.getElementById('hoverConcluidas').innerText = countConcluidas;
-      document.getElementById('hoverListaOps').innerHTML = listaHTML;
-
-      // Troca os painéis
-      placeholder.style.display = 'none';
-      painel.style.display = 'flex'; // Usando flex para manter o h-100
-    }
-
-    // 3. Função disparada ao TIRAR O MOUSE de cima de todo o SVG
-    function esconderResumoCob() {
-      document.getElementById('painelHoverCob').style.display = 'none';
-      document.getElementById('painelHoverPlaceholder').style.display = 'flex';
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        const scoTabBtn = document.getElementById('sco-tab');
-        if (scoTabBtn) {
-            scoTabBtn.addEventListener('shown.bs.tab', function (event) {
-                const idOpAtiva = document.getElementById('idOpAtiva') ? document.getElementById('idOpAtiva').value : null;
-                if (idOpAtiva && typeof recarregarSCO === 'function') {
-                    recarregarSCO();
-                }
-            });
-        }
+      const scoTabBtn = document.getElementById('sco-tab');
+      if (scoTabBtn) {
+        scoTabBtn.addEventListener('shown.bs.tab', function () {
+          const id = document.getElementById('idOpAtiva') ? document.getElementById('idOpAtiva').value : null;
+          if (id && typeof recarregarSCO === 'function') recarregarSCO();
+        });
+      }
     });
 
-    function fazerLogout() {
-      sessionStorage.removeItem("perfilLogado");
-      sessionStorage.removeItem("usuarioLogado");
-      voltarAoHub();
-      Swal.fire({ icon: 'info', title: 'Desconectado', text: 'Você saiu do sistema.', background: '#1a1a1a', color: '#fff', timer: 1500, showConfirmButton: false });
-    }
-
   </script>
-
-  
 </body>
 </html>

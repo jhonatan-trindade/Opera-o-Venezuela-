@@ -1,0 +1,1326 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+  /* ----- Grades editáveis e seções (NOVO VISUAL) ----- */
+  .section-box { margin-bottom: 24px; border-left: 3px solid #0d6efd; padding-left: 10px; }
+  .section-title { font-size: 0.8rem; font-weight: bold; text-transform: uppercase; color: #00ffaa; margin-bottom: 8px; }
+
+  .wrapper-modulo { width: 100%; max-height: 62vh; overflow: auto; background: #262626; border: 1px solid #444; border-radius: 6px; }
+  .table-modulo { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 0; }
+  .table-modulo th { background-color: #333; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid #0d6efd; padding: 8px; font-size: 0.65rem; white-space: nowrap; color: #ccc; text-transform: uppercase; }
+  .table-modulo td { padding: 2px 5px; border: 1px solid #333; font-size: 0.72rem; vertical-align: middle; color: #fff; }
+
+  .input-grid { background: transparent; color: white; border: none; width: 100%; font-size: 0.72rem; padding: 4px; cursor: cell; pointer-events: auto !important; transition: 0.3s; }
+  .input-grid:focus { background: rgba(13, 110, 253, 0.15); outline: 2px solid #0d6efd; outline-offset: -2px; color: #fff; border-radius: 2px; box-shadow: inset 0 0 8px rgba(0,0,0,0.5); }
+  select.input-grid { cursor: pointer; }
+  select.status-select { font-weight: bold; text-align: center; }
+  select.select-funcao { font-weight: bold; text-align: center; }
+
+  .btn-action-round { width: 26px; height: 26px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; margin: 0 2px; border: none; cursor: pointer; transition: 0.2s; }
+  .btn-action-round:hover { filter: brightness(1.2); transform: scale(1.1); }
+  .btn-edit { background-color: #ffc107; color: #000; }
+  .btn-delete { background-color: #dc3545; color: #fff; }
+  .btn-info-c { background-color: #0dcaf0; color: #000; }
+
+  /* ----- Animação PRÉ CADASTRO ----- */
+  @keyframes pulse-pre-cadastro-intenso {
+    0% { opacity: 1; filter: brightness(1); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.8); }
+    50% { opacity: 0.5; filter: brightness(0.7); box-shadow: 0 0 0 8px rgba(255, 193, 7, 0); }
+    100% { opacity: 1; filter: brightness(1); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+  }
+  .piscar-pre-cadastro { animation: pulse-pre-cadastro-intenso 1.2s infinite !important; border: 2px solid #ffc107 !important; }
+  @keyframes badge-pular { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .badge-pendente-animado { animation: badge-pular 1.2s infinite ease-in-out; border: 2px solid #1e1e1e; }
+
+  /* ----- Classes de Sistema Antigas (Mantidas para o JS e colunas) ----- */
+  .row-pre-cadastro td { background-color: rgba(255, 193, 7, 0.07) !important; }
+  .col-ord { display: none; }
+  .table-modulo th.col-ord { display: none; }
+  .col-local { min-width: 180px; }
+  .border-dashed { border-style: dashed !important; }
+  @keyframes spin-efetivo { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .spin { display: inline-block; animation: spin-efetivo 0.9s linear infinite; }
+
+   /* ----- Correção do Fundo dos Menus Suspensos (Modo Escuro) ----- */
+  select.input-grid option {
+    background-color: #1e1e1e !important;
+    color: #ffffff !important;
+    font-weight: 500;
+  }
+  
+  /* Melhora o contraste quando você seleciona o texto arrastando o mouse */
+  .input-grid::selection {
+    background-color: #ffc107 !important;
+    color: #000000 !important;
+  }
+
+  /* Tela Cheia CSS Imersivo (Tabelas) */
+  .fullscreen-mode-active {
+    position: fixed !important;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100vw; height: 100vh;
+    z-index: 1035; /* CORREÇÃO: Rebaixado para não engolir alertas e modais */
+    background-color: #121212;
+    margin: 0 !important; padding: 20px !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+  }
+  .fullscreen-mode-active .wrapper-modulo { max-height: calc(100vh - 120px) !important; }
+
+  /* CORREÇÃO: Força modais e alertas do sistema ficarem SEMPRE ACIMA da tela cheia */
+  .swal2-container { z-index: 999999 !important; }
+  .modal { z-index: 999999 !important; }
+  .modal-backdrop { z-index: 999998 !important; }
+
+</style>
+
+<div class="section-box mt-3" id="efetivo-section-box">
+  <div class="section-title mb-2">CADASTRO DE EFETIVO</div>
+
+  <div class="d-flex flex-wrap align-items-center mb-3 gap-2">
+    <button class="btn btn-primary btn-sm fw-bold" onclick="abrirModalEfetivo()">
+      <i class="bi bi-person-plus-fill"></i>  NOVO REGISTRO
+    </button>
+    <button class="btn btn-secondary btn-sm fw-bold" onclick="adicionarLinhaEfetivo()">
+      <i class="bi bi-plus-lg"></i>  ADICIONAR LINHA
+    </button>
+    <button class="btn btn-info text-white fw-bold btn-sm" onclick="abrirModalImportacao()">
+      <i class="bi bi-cloud-upload"></i> IMPORTAR EFETIVO EM LOTE
+    </button>
+    <button id="btnFsEfetivo" class="btn btn-outline-light border-secondary btn-sm fw-bold ms-1" onclick="toggleFsEfetivo()">
+      <i class="bi bi-arrows-fullscreen"></i> Tela Cheia
+    </button>
+
+    <div class="d-flex align-items-center gap-2 justify-content-end flex-wrap">
+      <span class="text-info fw-bold small">FILTRAR:</span>
+      
+      <input type="text" id="fNome" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 170px;" placeholder="Nome ou Nº BM..." oninput="aplicarFiltrosEfetivo()">
+      
+      <select id="fStatus" class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="aplicarFiltrosEfetivo()">
+        <option value="">Status (Todos)</option>
+        <option value="DISPONÍVEL">Disponível</option>
+        <option value="INDISPONÍVEL">Indisponível</option>
+        <option value="EMPENHADO">Empenhado</option>
+        <option value="DESCANSO">Descanso</option>
+        <option value="DESMOBILIZADO">Desmobilizado</option>
+        <option value="PRÉ CADASTRO">Pré Cadastro</option>
+      </select>
+
+      <select id="fQuali" class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 160px;" onchange="aplicarFiltrosEfetivo()">
+        <option value="">Qualificações (Todas)</option>
+        <option value="CPCIF">CPCIF</option>
+        <option value="NIF">NIF</option>
+        <option value="Piloto RPA">Piloto RPA</option>
+      </select>
+
+      <input type="text" id="fUnidade" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" placeholder="Unidade (Ex: CEB)" oninput="aplicarFiltrosEfetivo()">
+
+      <button class="btn btn-sm btn-primary fw-bold ms-2" id="contadorEfetivo" style="pointer-events: none;">Total: 0</button>
+    </div>
+  </div>
+
+  <div class="wrapper-modulo">
+    <table class="table table-dark table-modulo" style="min-width: 2300px;">
+      <thead>
+        <tr>
+          <th style="width: 1%; white-space: nowrap; text-align: center; padding-left: 12px; padding-right: 12px;">AÇÕES</th>
+          <th style="width: 120px; min-width: 120px;">Status</th>
+          <th style="width: 90px; min-width: 90px;">Instituição</th>
+          <th style="width: 100px; min-width: 100px;">Nº BM</th>
+          <th style="width: 80px; min-width: 80px;">P/G</th>
+          <th style="width: 250px; min-width: 250px;">Nome</th>
+          <th style="width: 160px; min-width: 160px;">Qualificação Prof.</th>
+          <th style="width: 150px; min-width: 150px;">Unidade</th>
+          <th style="width: 130px; min-width: 130px;">Contato</th>
+          <th style="width: 110px; min-width: 110px;">Função</th>
+          <th style="width: 140px; min-width: 140px;">Início Empenho</th>
+          <th style="width: 140px; min-width: 140px;">Término do Empenho</th>
+          <th style="width: 90px; min-width: 90px; text-align: center;">Duração</th>
+          <th style="width: 90px; min-width: 90px;">Dia Chegada</th>
+          <th style="width: 100px; min-width: 100px;">Credenciado</th>
+          <th style="width: 140px; min-width: 140px;">Categoria</th>
+        </tr>
+      </thead>
+      <tbody id="lista-EFETIVO">
+        <tr><td colspan="16" class="text-center text-muted">Abra uma operação para carregar o efetivo.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+     <div class="d-flex justify-content-center w-100 mt-4 mb-2">
+    <button class="btn btn-success btn-sm fw-bold px-4 py-2 shadow-sm" style="background-color: #198754; border-color: #198754;" onclick="exportarExcelEfetivo()">
+      <i class="bi bi-file-earmark-excel"></i> EXPORTAR PARA EXCEL
+    </button>
+  </div>
+
+</div>
+
+<datalist id="listaChefes"></datalist>
+
+<div class="modal fade" id="modalQualiInline" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content bg-dark border-secondary">
+      <div class="modal-header border-bottom border-secondary py-2">
+        <h6 class="modal-title text-info fw-bold mb-0">Qualificações</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="qLinhaAtual">
+        <div class="form-check mb-2">
+          <input class="form-check-input q-check" type="checkbox" value="CPCIF" id="qCPCIF">
+          <label class="form-check-label text-white" for="qCPCIF">CPCIF</label>
+        </div>
+        <div class="form-check mb-2">
+          <input class="form-check-input q-check" type="checkbox" value="NIF" id="qNIF">
+          <label class="form-check-label text-white" for="qNIF">NIF</label>
+        </div>
+        <div class="form-check mb-2">
+          <input class="form-check-input q-check" type="checkbox" value="Piloto RPA" id="qRPA">
+          <label class="form-check-label text-white" for="qRPA">Piloto RPA</label>
+        </div>
+      </div>
+      <div class="modal-footer border-top border-secondary py-1">
+        <button type="button" class="btn btn-sm btn-primary w-100 fw-bold" onclick="salvarQualiInline()">Aplicar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalEfetivo" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content" style="background-color: #1e1e1e; color: #fff; border: 1px solid #444; border-radius: 8px;">
+      
+      <div class="modal-header border-secondary py-3">
+        <h5 class="modal-title fw-bold" style="font-size: 1.1rem;">Cadastro do Efetivo</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      
+      <div class="modal-body pt-4 pb-4" style="max-height: 80vh; overflow-y: auto;">
+      
+      <style>
+        #modalEfetivo .form-control, 
+        #modalEfetivo .form-select, 
+        #modalEfetivo .multi-select-container {
+          background-color: #2b2b2b !important;
+          color: #ffffff !important;
+          border: 1px solid #444 !important;
+          border-radius: 4px;
+        }
+        #modalEfetivo .form-control:focus, 
+        #modalEfetivo .form-select:focus {
+          border-color: #0d6efd !important;
+          box-shadow: inset 0 0 5px rgba(0,0,0,0.5) !important;
+        }
+        #modalEfetivo .form-label {
+          font-size: 0.7rem;
+          font-weight: bold;
+          text-transform: uppercase;
+          color: #ccc;
+          margin-bottom: 5px;
+        }
+        #modalEfetivo .form-control::placeholder {
+          color: #777 !important;
+        }
+      </style>
+
+      <form id="formEfetivo">
+        <input type="hidden" id="eLinha">
+        <input type="hidden" id="eOrdModal">
+        
+        <div class="row g-4">
+          
+          <div class="col-md-3">
+            <label class="form-label text-warning">Nº BM (BUSCA AUTOMÁTICA)</label>
+            <input type="text" class="form-control form-control-sm" id="eNbmModal" onblur="buscarBMModal()" placeholder="Ex: 1800507">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">STATUS</label>
+            <select class="form-select form-select-sm status-select" id="eStatusModal" onchange="atualizarCorStatus(this)">
+              <option value="DISPONÍVEL">DISPONÍVEL</option>
+              <option value="INDISPONÍVEL">INDISPONÍVEL</option>
+              <option value="EMPENHADO">EMPENHADO</option>
+              <option value="DESCANSO">DESCANSO</option>
+              <option value="DESMOBILIZADO">DESMOBILIZADO</option>
+              <option value="PRÉ CADASTRO">PRÉ CADASTRO</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">INSTITUIÇÃO</label>
+            <input type="text" class="form-control form-control-sm" id="eInstModal" value="CBMMG">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">POSTO/GRAD</label>
+            <input type="text" class="form-control form-control-sm" id="ePgModal" readonly>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">NOME COMPLETO</label>
+            <input type="text" class="form-control form-control-sm" id="eNomeModal">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">QUALIFICAÇÃO PROFISSIONAL (SELECIONE)</label>
+            <div class="multi-select-container p-2" id="eQualiModal_container" style="height: 85px; overflow-y: auto;">
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" value="CPCIF" id="chkCPCIF">
+                <label class="form-check-label ms-1 small fw-bold" for="chkCPCIF">CPCIF</label>
+              </div>
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" value="NIF" id="chkNIF">
+                <label class="form-check-label ms-1 small fw-bold" for="chkNIF">NIF</label>
+              </div>
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" value="Piloto RPA" id="chkRPA">
+                <label class="form-check-label ms-1 small fw-bold" for="chkRPA">Piloto RPA</label>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">UNIDADE</label>
+            <input type="text" class="form-control form-control-sm" id="eUndModal" readonly>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">CONTATO</label>
+            <input type="text" class="form-control form-control-sm" id="eContatoModal" oninput="maskTelefone(event)" maxlength="15" placeholder="(31) 99999-9999">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">FUNÇÃO</label>
+            <select class="form-select form-select-sm fw-bold select-funcao" id="eFuncaoModal" onchange="atualizarCorFuncao(this)" style="color: #ffffff;">
+              <option value="À Designar">À Designar</option>
+              <option value="STAFF">STAFF</option>
+              <option value="CAMPO">CAMPO</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">DIA CHEGADA NA OP. (EX: 1, 2, 3)</label>
+            <input type="number" class="form-control form-control-sm" id="eChegadaModal" min="1" placeholder="Somente o número (Ex: 1)">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">INÍCIO EMPENHO</label>
+            <input type="datetime-local" class="form-control form-control-sm" id="eInicioModal" style="color-scheme: dark;">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">TÉRMINO DO EMPENHO</label>
+            <input type="datetime-local" class="form-control form-control-sm" id="eTerminoModal" style="color-scheme: dark;">
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">CREDENCIADO</label>
+            <select class="form-select form-select-sm fw-bold" id="eCredModal" style="color-scheme: dark;">
+              <option value="">-</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">CATEGORIA</label>
+            <input type="text" class="form-control form-control-sm" id="eCatModal" placeholder="Ex: Cão de Busca, Viatura...">
+          </div>
+
+          <div class="col-md-12 d-none">
+            <input type="text" id="eLocalModal">
+            <input type="text" id="eDiasModal">
+          </div>
+
+        </div>
+      
+      <div class="modal-footer border-secondary py-3 mt-3">
+        <button type="button" class="btn btn-primary w-100 fw-bold fs-6" style="border-radius: 4px;" onclick="salvarEfetivo()">SALVAR EFETIVO</button>
+      </div>
+      </form>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal fade" id="modalImportarEfetivo" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title text-info fw-bold"><i class="bi bi-cloud-upload"></i> Importar Lote de Efetivo</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center pt-4 pb-4">
+        <p class="text-muted small mb-3">Baixe o modelo oficial, preencha os dados dos militares e envie o arquivo abaixo.</p>
+        <div class="alert alert-dark border-warning text-warning p-2 mb-4 text-start" style="font-size: 0.8rem;">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i> <b>ATENÇÃO:</b> Não preencha as colunas de Início e Término de Empenho na planilha. Para evitar erros, essas datas devem ser inseridas diretamente no sistema após a importação.
+        </div>
+        <button class="btn btn-outline-success btn-sm mb-4 fw-bold shadow-sm" onclick="baixarTemplateEfetivo()">
+          <i class="bi bi-download"></i> BAIXAR PLANILHA MODELO
+        </button>
+        
+        <div class="p-4 border border-secondary rounded" style="background-color: #262626; border-style: dashed !important;">
+           <input type="file" class="form-control form-control-sm bg-dark text-white border-secondary" id="fileImportEfetivo" accept=".xlsx, .xls" onchange="processarArquivoEfetivo(event)">
+           <div id="importFeedbackEfetivo" class="mt-3 small text-info fw-bold"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ==========================================
+  // CORREÇÃO DO CONFLITO DE Z-INDEX DOS MODAIS
+  // ==========================================
+  document.body.appendChild(document.getElementById('modalEfetivo'));
+  document.body.appendChild(document.getElementById('modalImportarEfetivo'));
+
+  // ==========================================
+  // VARIÁVEIS GLOBAIS E ESTADO
+  // ==========================================
+  let cacheEfetivo = [];
+  let bdEfetivoLocal = {}; 
+  
+  // ==========================================
+  // CORES E ESTILOS DINÂMICOS (OFICIAL)
+  // ==========================================
+  function getCorStatus(status) {
+    switch(String(status).toUpperCase()) {
+      case 'DISPONÍVEL': return '#198754';
+      case 'INDISPONÍVEL': return '#dc3545';
+      case 'EMPENHADO': return '#0d6efd';
+      case 'DESCANSO': return '#c3e6cb';
+      case 'DESMOBILIZADO': return '#444444';
+      case 'PRÉ CADASTRO': return '#ffc107'; 
+      default: return '#333333';
+    }
+  }
+
+  function getCorTextoStatus(status) {
+     const s = String(status).toUpperCase();
+     if (s === 'DESCANSO' || s === 'PRÉ CADASTRO' ) return '#000000';
+     return '#ffffff';
+  }
+
+  function atualizarCorStatus(el) {
+     el.style.setProperty('background-color', getCorStatus(el.value), 'important');
+     el.style.setProperty('color', getCorTextoStatus(el.value), 'important');
+     
+     if (String(el.value).toUpperCase().trim() === 'PRÉ CADASTRO') {
+         el.classList.add('piscar-pre-cadastro');
+     } else {
+         el.classList.remove('piscar-pre-cadastro');
+     }
+  }
+
+  // ==========================================
+  // CORES DINÂMICAS: FUNÇÃO (STAFF/CAMPO)
+  // ==========================================
+  function getCorFuncao(funcao) {
+    const f = String(funcao).toUpperCase();
+    if (f === 'STAFF') return '#198754';
+    if (f === 'CAMPO') return '#dc3545';
+    return '#ffffff';
+  }
+
+  function getCorTextoFuncao(funcao) {
+    const f = String(funcao).toUpperCase();
+    if (f === 'STAFF' || f === 'CAMPO') return '#ffffff';
+    return '#000000';
+  }
+
+  function atualizarCorFuncao(el) {
+    el.style.setProperty('background-color', getCorFuncao(el.value), 'important');
+    el.style.setProperty('color', getCorTextoFuncao(el.value), 'important');
+  }
+
+  function swalDark(options) { options.background = '#1e1e1e'; options.color = '#fff'; return Swal.fire(options); }
+
+  // ==========================================
+  // FUNÇÕES DE CÁLCULO E FORMATAÇÃO
+  // ==========================================
+  function calcularOrd(pg) {
+    const map = { "CEL":1, "TEN CEL":2, "MAJ":3, "CAP":4, "1 TEN":5, "2 TEN":6, "ASP A OF":7, "ALUNO":8, "CAD":9, "SUB TEN":10, "1 SGT":11, "2 SGT":12, "3 SGT":13, "CB":14, "SD 1 CL":15, "SD 2 CL":16 };
+    return map[String(pg).trim().toUpperCase()] || 99;
+  }
+
+  function maskTelefone(ev) {
+    let v = ev.target.value.replace(/\D/g, "");
+    v = v.substring(0, 11);
+    if (v.length > 2) v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+    if (v.length > 9) v = v.replace(/(\d{5})(\d)/, "$1-$2");
+    else if (v.length > 8) v = v.replace(/(\d{4})(\d)/, "$1-$2");
+    ev.target.value = v;
+  }
+
+  // ==========================================
+  // BUSCA INTELIGENTE DE MILITAR (MODAL)
+  // ==========================================
+  function buscarBMModal() {
+    const inputEl = document.getElementById('eNbmModal');
+    const bmOriginal = inputEl.value; 
+    const bm = bmOriginal.replace(/\D/g, '');
+    
+    if (!bm || bm.length < 3) return;
+
+    const duplicado = cacheEfetivo.find(e => String(e.n_bm).replace(/\D/g, '') === bm);
+    if (duplicado && document.getElementById('eLinha').value === '') { 
+      swalDark({ icon: 'warning', title: 'Atenção', text: 'Militar já cadastrado nesta operação!' }); 
+      inputEl.value = ''; 
+      return; 
+    }
+
+    if (bdEfetivoLocal && bdEfetivoLocal[bm]) {
+      const dados = bdEfetivoLocal[bm];
+      
+      document.getElementById('ePgModal').value = dados.pg;
+      document.getElementById('eNomeModal').value = dados.nome;
+      document.getElementById('eUndModal').value = dados.und;
+      document.getElementById('eInstModal').value = "CBMMG";
+      document.getElementById('eOrdModal').value = calcularOrd(dados.pg);
+      document.getElementById('eCredModal').value = dados.credenciamento || "Não";
+      document.getElementById('eCatModal').value = dados.categoria || "-";
+      
+      ['ePgModal', 'eNomeModal', 'eUndModal', 'eInstModal'].forEach(id => { 
+        document.getElementById(id).style.backgroundColor = 'rgba(0, 255, 170, 0.2)'; 
+        setTimeout(() => document.getElementById(id).style.backgroundColor = 'transparent', 1500); 
+      });
+      
+    } else { 
+      inputEl.style.border = "2px solid red"; 
+      setTimeout(() => inputEl.style.border = "1px solid #444", 2000); 
+      swalDark({ icon: 'info', title: 'Não Encontrado', text: 'Nº BM não localizado no banco estadual. Pode prosseguir com preenchimento manual.', timer: 3000 });
+    }
+  }
+
+  // ==========================================
+  // CONTROLE DOS MODAIS
+  // ==========================================
+  function abrirModalEfetivo() {
+    const idOpAtiva = document.getElementById('idOpAtiva') ? document.getElementById('idOpAtiva').value : null;
+    if (!idOpAtiva) { swalDark({ icon: 'warning', title: 'Atenção', text: 'Nenhuma operação aberta selecionada.' }); return; }
+
+    document.getElementById('formEfetivo').reset();
+    
+    document.getElementById('eLinha').value = '';
+    document.getElementById('eOrdModal').value = '';
+    
+    document.getElementById('eNbmModal').style.border = "1px solid #444";
+    
+    ['ePgModal', 'eNomeModal', 'eUndModal', 'eInstModal'].forEach(id => { 
+        const el = document.getElementById(id);
+        if (el) el.style.backgroundColor = '#2b2b2b'; 
+    });
+    
+    document.querySelectorAll('#eQualiModal_container .form-check-input').forEach(cb => {
+      cb.checked = false;
+    });
+
+    document.getElementById('eStatusModal').value = 'DISPONÍVEL';
+    atualizarCorStatus(document.getElementById('eStatusModal'));
+    
+    document.getElementById('eInstModal').value = "CBMMG";
+    
+    document.getElementById('eFuncaoModal').value = 'À Designar';
+    atualizarCorFuncao(document.getElementById('eFuncaoModal'));
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEfetivo')).show();
+  }
+
+  // ==========================================
+  // CONVERSORES DE DATA (MODAL <-> BRASIL)
+  // ==========================================
+  function formataIsoParaBr(iso) {
+    if (!iso) return "";
+    let p = iso.split('T');
+    if (p.length !== 2) return iso;
+    let d = p[0].split('-');
+    return `${d[2]}/${d[1]}/${d[0]} ${p[1]}`;
+  }
+
+  function formataBrParaIso(br) {
+    if (!br) return "";
+    if (br.includes('T')) return br;
+    let p = br.split(' ');
+    if (p.length !== 2) return br;
+    let d = p[0].split('/');
+    if (d.length !== 3) return br;
+    return `${d[2]}-${d[1]}-${d[0]}T${p[1]}`;
+  }
+
+  function salvarEfetivo() {
+    const nomeInput = document.getElementById('eNomeModal');
+    const instInput = document.getElementById('eInstModal');
+    const contatoInput = document.getElementById('eContatoModal');
+    
+    const nomeVal = nomeInput.value.trim();
+    const instVal = instInput.value.trim();
+    const contatoVal = contatoInput.value.trim();
+
+    if (!nomeVal || !instVal || !contatoVal) {
+      if (!nomeVal) nomeInput.style.border = "1px solid #dc3545";
+      if (!instVal) instInput.style.border = "1px solid #dc3545";
+      if (!contatoVal) contatoInput.style.border = "1px solid #dc3545";
+      
+      swalDark({ 
+        icon: 'warning', 
+        title: 'Campos Obrigatórios!', 
+        text: 'Preencha o Nome, a Instituição e o Contato antes de salvar.' 
+      });
+      
+      setTimeout(() => {
+        nomeInput.style.border = "1px solid #444";
+        instInput.style.border = "1px solid #444";
+        contatoInput.style.border = "1px solid #444";
+      }, 3000);
+      
+      return; 
+    }
+
+    const idOpAtiva = document.getElementById('idOpAtiva') ? document.getElementById('idOpAtiva').value : 'OP-TESTE';
+    
+    const qualiMarcadas = Array.from(document.querySelectorAll('#eQualiModal_container .form-check-input:checked')).map(cb => cb.value).join(", ");
+    
+    const inicioEmpenho = document.getElementById('eInicioModal').value;
+    const terminoEmpenho = document.getElementById('eTerminoModal').value;
+    const periodoCalculado = calcularPeriodoTrabalho(inicioEmpenho, terminoEmpenho);
+    
+    let diaChegada = document.getElementById('eChegadaModal').value;
+    if (diaChegada && !String(diaChegada).toUpperCase().includes('DIA')) {
+       diaChegada = "DIA " + diaChegada;
+    }
+
+    let bmModalStr = document.getElementById('eNbmModal').value.trim();
+    let bmModalPuro = bmModalStr.replace(/\D/g, ''); 
+    if (bmModalPuro.length > 1) {
+        bmModalStr = bmModalPuro.slice(0, -1) + '-' + bmModalPuro.slice(-1);
+    }
+
+    const dados = {
+      idOp: idOpAtiva,
+      linha: document.getElementById('eLinha').value,
+      ord: document.getElementById('eOrdModal').value || calcularOrd(document.getElementById('ePgModal').value),
+      status: document.getElementById('eStatusModal').value,
+      instituicao: instVal,
+      n_bm: bmModalStr, 
+      pg: document.getElementById('ePgModal').value,
+      nome: nomeVal,
+      qualificacao: qualiMarcadas,
+      unidade: document.getElementById('eUndModal').value,
+      contato: contatoVal,
+      funcao: document.getElementById('eFuncaoModal').value,
+      local_atuacao: document.getElementById('eLocalModal').value,
+      inicio_empenho: formataIsoParaBr(inicioEmpenho), 
+      termino: formataIsoParaBr(terminoEmpenho),       
+      dias_empenho: periodoCalculado, 
+      dia_chegada: diaChegada,
+      credenciamento: document.getElementById('eCredModal').value,
+      categoria: document.getElementById('eCatModal').value
+    };
+
+    bootstrap.Modal.getInstance(document.getElementById('modalEfetivo')).hide();
+    swalDark({ title: 'Salvando no Banco...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    if (typeof google === 'undefined' || !google.script) return; 
+
+    google.script.run
+      .withSuccessHandler((linhaRetornada) => {
+        if (dados.linha && !String(dados.linha).includes('tmp-')) {
+          const idx = cacheEfetivo.findIndex(x => String(x.linha) === String(dados.linha));
+          if (idx !== -1) cacheEfetivo[idx] = dados;
+        } else {
+          dados.linha = linhaRetornada;
+          cacheEfetivo.push(dados);
+        }
+        
+        aplicarFiltrosEfetivo();
+        swalDark({ icon: 'success', title: 'Efetivo Salvo', timer: 1500, showConfirmButton: false });
+      })
+      .withFailureHandler((erro) => swalDark({ icon: 'error', title: 'Erro', text: erro.message }))
+      .salvarEfetivo(dados);
+  }
+
+  // ==========================================
+  // CARREGAR DADOS NO MODAL PARA EDIÇÃO
+  // ==========================================
+  function editarEfetivo(linha) {
+    const e = cacheEfetivo.find(x => String(x.linha) === String(linha));
+    if (!e) return;
+    
+    document.getElementById('eLinha').value = e.linha;
+    document.getElementById('eOrdModal').value = e.ord || '';
+    document.getElementById('eCredModal').value = e.credenciamento || '';
+    document.getElementById('eCatModal').value = e.categoria || '';
+    
+    document.getElementById('eNbmModal').value = e.n_bm || '';
+    document.getElementById('eNbmModal').style.border = "1px solid #444"; 
+    document.getElementById('ePgModal').value = e.pg || '';
+    document.getElementById('eNomeModal').value = e.nome || '';
+    document.getElementById('eInstModal').value = e.instituicao || 'CBMMG';
+    document.getElementById('eUndModal').value = e.unidade || '';
+    document.getElementById('eContatoModal').value = e.contato || '';
+    document.getElementById('eLocalModal').value = e.local_atuacao || '';
+    
+    document.getElementById('eStatusModal').value = e.status || 'DISPONÍVEL';
+    atualizarCorStatus(document.getElementById('eStatusModal'));
+    
+    document.getElementById('eFuncaoModal').value = e.funcao || 'À Designar';
+    atualizarCorFuncao(document.getElementById('eFuncaoModal'));
+    
+    document.querySelectorAll('#eQualiModal_container .form-check-input').forEach(cb => {
+      cb.checked = (e.qualificacao || '').includes(cb.value);
+    });
+    
+    document.getElementById('eInicioModal').value = formataBrParaIso(e.inicio_empenho);
+    document.getElementById('eTerminoModal').value = formataBrParaIso(e.termino);
+    
+    document.getElementById('eChegadaModal').value = e.dia_chegada ? String(e.dia_chegada).replace(/\D/g, '') : '';
+    
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEfetivo')).show();
+  }
+
+  // ==========================================
+  // CARREGAMENTO DA OPERAÇÃO
+  // ==========================================
+  window.addEventListener('operacaoAberta', function (e) { 
+    const idOp = e.detail.idOp;
+    
+    if (typeof google !== 'undefined' && google.script) {
+      google.script.run.withSuccessHandler(res => { bdEfetivoLocal = res || {}; }).carregarBaseEfetivoCBMMG();
+      
+      document.getElementById('lista-EFETIVO').innerHTML = '<tr><td colspan="16" class="text-center text-warning py-4"><div class="spinner-border spinner-border-sm me-2"></div>Buscando Efetivo...</td></tr>';
+      google.script.run.withSuccessHandler(d => { 
+        cacheEfetivo = d || []; 
+        aplicarFiltrosEfetivo(); 
+      }).buscarEfetivo(idOp);
+    }
+  });
+
+  // ==========================================
+  // RENDERIZAÇÃO DA TABELA
+  // ==========================================
+  function renderizarEfetivoListas(dados) {
+    const tbody = document.getElementById('lista-EFETIVO');
+    if (!dados || dados.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="16" class="text-center text-muted py-4">Nenhum militar cadastrado.</td></tr>';
+      document.getElementById('contadorEfetivo').innerText = 'Total: 0';
+      return;
+    }
+
+    let html = '';
+    dados.forEach(e => { 
+      const txtCred = (e.credenciamento || "Não").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const txtCat = (e.categoria || "-").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      
+      const stTrim = String(e.status || 'DISPONÍVEL').toUpperCase().trim();
+      const isPre = (stTrim === 'PRÉ CADASTRO');
+      const bgSt = getCorStatus(stTrim); const txSt = getCorTextoStatus(stTrim);
+      const bgFnc = getCorFuncao(e.funcao); const txFnc = getCorTextoFuncao(e.funcao);
+      
+      const iniIso = formataBrParaIso(e.inicio_empenho) || "";
+      const terIso = formataBrParaIso(e.termino) || "";
+
+      html += `<tr id="row-${e.linha}">
+        <td style="width: 1%; white-space: nowrap; vertical-align: middle;">
+           <div class="d-flex flex-nowrap justify-content-center align-items-center gap-1">
+             <button class="btn-action-round btn-info-c" onclick="mostrarCredenciais('${txtCred}', '${txtCat}')" title="Credenciais"><i class="bi bi-info-circle"></i></button>
+             <button class="btn-action-round btn-edit" onclick="editarEfetivo('${e.linha}')" title="Editar no Modal"><i class="bi bi-pencil-fill"></i></button>
+             <button class="btn-action-round btn-delete" onclick="excluirEfetivo('${e.linha}')" title="Excluir"><i class="bi bi-trash-fill"></i></button>
+           </div>
+        </td>
+        
+        <td>
+          <select class="input-grid fw-bold status-select ${isPre ? 'piscar-pre-cadastro' : ''}" style="background-color: ${bgSt}; color: ${txSt}; border-radius:4px;" onchange="autoSalvarEfetivo('${e.linha}', 4, this.value, event); atualizarCorStatus(this);">
+            <option value="DISPONÍVEL" ${stTrim === 'DISPONÍVEL' ? 'selected' : ''}>DISPONÍVEL</option>
+            <option value="INDISPONÍVEL" ${stTrim === 'INDISPONÍVEL' ? 'selected' : ''}>INDISPONÍVEL</option>
+            <option value="EMPENHADO" ${stTrim === 'EMPENHADO' ? 'selected' : ''}>EMPENHADO</option>
+            <option value="DESCANSO" ${stTrim === 'DESCANSO' ? 'selected' : ''}>DESCANSO</option>
+            <option value="DESMOBILIZADO" ${stTrim === 'DESMOBILIZADO' ? 'selected' : ''}>DESMOBILIZADO</option>
+            <option value="PRÉ CADASTRO" ${isPre ? 'selected' : ''}>PRÉ CADASTRO</option>
+          </select>
+        </td>
+        
+        <td><input class="input-grid text-white" value="${e.instituicao || ''}" onchange="autoSalvarEfetivo('${e.linha}', 5, this.value, event)"></td>
+        
+        <td><input class="input-grid text-white fw-bold inp-n_bm" value="${e.n_bm || ''}" onkeydown="navegarNbm(event, '${e.linha}')" onblur="buscarBMInline(this, '${e.linha}')" placeholder="Buscar..."></td>
+        
+        <td><input class="input-grid text-white" value="${e.pg || ''}" onchange="autoSalvarEfetivo('${e.linha}', 7, this.value, event)"></td>
+        <td><input class="input-grid text-white inp-nome" value="${e.nome || ''}" onchange="autoSalvarEfetivo('${e.linha}', 8, this.value, event)"></td>
+        
+        <td><input class="input-grid text-info" value="${e.qualificacao || ''}" readonly onclick="abrirMiniModalQuali('${e.linha}')" placeholder="Selecionar..." style="cursor:pointer;" title="Clique para alterar qualificações"></td>
+        
+        <td><input class="input-grid text-white" value="${e.unidade || ''}" onchange="autoSalvarEfetivo('${e.linha}', 10, this.value, event)"></td>
+        <td><input class="input-grid text-white" value="${e.contato || ''}" oninput="maskTelefone(event)" onchange="autoSalvarEfetivo('${e.linha}', 11, this.value, event)"></td>
+        
+        <td>
+          <select class="input-grid fw-bold select-funcao" style="background-color: ${bgFnc}; color: ${txFnc}; border-radius:4px;" onchange="autoSalvarEfetivo('${e.linha}', 12, this.value, event); atualizarCorFuncao(this);">
+            <option value="À Designar" ${e.funcao === 'À Designar' || !e.funcao ? 'selected' : ''}>À Designar</option>
+            <option value="STAFF" ${e.funcao === 'STAFF' ? 'selected' : ''}>STAFF</option>
+            <option value="CAMPO" ${e.funcao === 'CAMPO' ? 'selected' : ''}>CAMPO</option>
+          </select>
+        </td>
+        
+        <td><input type="datetime-local" class="input-grid text-white" value="${iniIso}" style="color-scheme: dark;" onchange="autoSalvarEfetivo('${e.linha}', 13, formataIsoParaBr(this.value), event)"></td>
+        <td><input type="datetime-local" class="input-grid text-white" value="${terIso}" style="color-scheme: dark;" onchange="autoSalvarEfetivo('${e.linha}', 14, formataIsoParaBr(this.value), event)"></td>
+        
+        <td class="text-center text-white fw-bold align-middle" style="font-size: 0.75rem;">${e.dias_empenho || ''}</td>
+        
+        <td><input class="input-grid text-center text-white" value="${e.dia_chegada || ''}" placeholder="Ex: DIA 1" onchange="autoSalvarEfetivo('${e.linha}', 15, this.value, event)"></td>
+
+      <td>
+          <select class="input-grid text-white text-center fw-bold" style="color-scheme: dark;" onchange="autoSalvarEfetivo('${e.linha}', 18, this.value, event)">
+            <option value="" ${!e.credenciamento ? 'selected' : ''}>-</option>
+            <option value="Sim" ${e.credenciamento === 'Sim' ? 'selected' : ''}>Sim</option>
+            <option value="Não" ${e.credenciamento === 'Não' ? 'selected' : ''}>Não</option>
+          </select>
+        </td>
+        <td><input class="input-grid text-white text-center" value="${e.categoria || ''}" placeholder="-" onchange="autoSalvarEfetivo('${e.linha}', 19, this.value, event)"></td>
+      </tr>`; 
+    });
+    
+    tbody.innerHTML = html;
+    document.getElementById('contadorEfetivo').innerText = `Total: ${dados.length}`;
+  }
+
+  // ==========================================
+  // LÓGICA DO MINI MODAL DE QUALIFICAÇÕES
+  // ==========================================
+  function abrirMiniModalQuali(linha) {
+    const e = cacheEfetivo.find(x => String(x.linha) === String(linha));
+    if (!e) return;
+    
+    document.getElementById('qLinhaAtual').value = linha;
+    
+    document.querySelectorAll('.q-check').forEach(cb => cb.checked = false);
+    
+    if (e.qualificacao) {
+        document.querySelectorAll('.q-check').forEach(cb => {
+            if (e.qualificacao.includes(cb.value)) cb.checked = true;
+        });
+    }
+    
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalQualiInline')).show();
+  }
+
+  function salvarQualiInline() {
+    const linha = document.getElementById('qLinhaAtual').value;
+    const marcadas = Array.from(document.querySelectorAll('.q-check:checked')).map(cb => cb.value).join(", ");
+    
+    bootstrap.Modal.getInstance(document.getElementById('modalQualiInline')).hide();
+    
+    autoSalvarEfetivo(linha, 9, marcadas, null);
+    
+    const e = cacheEfetivo.find(x => String(x.linha) === String(linha));
+    if (e) {
+       e.qualificacao = marcadas;
+       aplicarFiltrosEfetivo();
+    }
+  }
+
+  // ==========================================
+  // SALVAMENTO SILENCIOSO (INLINE) E CRIAÇÃO
+  // ==========================================
+  function autoSalvarEfetivo(linha, colunaPlanilha, valor, evento) {
+    const inputEl = evento ? evento.target : null;
+
+    if (inputEl && !inputEl.classList.contains('status-select') && !inputEl.classList.contains('select-funcao')) {
+        inputEl.style.borderBottom = "2px solid #ffc107"; 
+    }
+
+    const e = cacheEfetivo.find(x => String(x.linha) === String(linha));
+    if (!e) return;
+    
+    const mapasCols = {
+        4: 'status', 5: 'instituicao', 6: 'n_bm', 7: 'pg', 8: 'nome',
+        9: 'qualificacao', 10: 'unidade', 11: 'contato', 12: 'funcao',
+        13: 'inicio_empenho', 14: 'termino', 15: 'dia_chegada',
+        18: 'credenciamento', 19: 'categoria' 
+    };
+    if (mapasCols[colunaPlanilha]) {
+        e[mapasCols[colunaPlanilha]] = valor;
+    }
+
+    if (typeof google === 'undefined' || !google.script) return;
+
+    if (String(linha).startsWith('tmp-')) {
+        if (e.criando) return; 
+        e.criando = true;
+        
+        e.idOp = document.getElementById('idOpAtiva') ? document.getElementById('idOpAtiva').value : '';
+        
+        google.script.run
+            .withSuccessHandler((novaLinha) => {
+                e.criando = false;
+                e.linha = novaLinha; 
+                
+                aplicarFiltrosEfetivo();
+                
+                swalDark({ toast: true, position: 'bottom-end', icon: 'success', title: 'Militar Adicionado', timer: 1500, showConfirmButton: false });
+            })
+            .withFailureHandler(() => { e.criando = false; })
+            .salvarEfetivo(e);
+            
+        return; 
+    }
+
+    google.script.run
+        .withSuccessHandler(() => {
+            if (inputEl && !inputEl.classList.contains('status-select') && !inputEl.classList.contains('select-funcao')) {
+                inputEl.style.borderBottom = "2px solid #198754"; 
+                setTimeout(() => inputEl.style.borderBottom = "none", 1500);
+            }
+            
+            if (colunaPlanilha === 13 || colunaPlanilha === 14) {
+                const iniISO = formataBrParaIso(e.inicio_empenho);
+                const terISO = formataBrParaIso(e.termino);
+                e.dias_empenho = calcularPeriodoTrabalho(iniISO, terISO);
+                aplicarFiltrosEfetivo();
+            }
+        })
+        .atualizarCelulaEfetivo(linha, colunaPlanilha - 1, valor);
+  }
+
+  // ==========================================
+  // BUSCA BM INLINE (FORÇANDO O TRAÇO E BLOQUEANDO DUPLICADO)
+  // ==========================================
+  function buscarBMInline(inputEl, linhaId) {
+    const bmDigitado = inputEl.value.trim(); 
+    const bmPuro = bmDigitado.replace(/\D/g, ''); 
+    
+    if (bmPuro === '' && String(linhaId).startsWith('tmp-')) return;
+
+    const e = cacheEfetivo.find(x => String(x.linha) === String(linhaId));
+    if (!e) return;
+
+    let bmPadronizado = bmDigitado; 
+    if (bmPuro.length > 1) {
+        bmPadronizado = bmPuro.slice(0, -1) + '-' + bmPuro.slice(-1);
+    }
+
+    if (bmPadronizado !== '') {
+        const duplicado = cacheEfetivo.find(m => String(m.linha) !== String(linhaId) && m.n_bm === bmPadronizado);
+        
+        if (duplicado) {
+            swalDark({
+                icon: 'error',
+                title: 'Militar Duplicado!',
+                text: `O BM ${bmPadronizado} já está cadastrado nesta operação (${duplicado.nome || 'sem nome'}).`
+            });
+            
+            inputEl.value = String(linhaId).startsWith('tmp-') ? '' : (e.n_bm || '');
+            
+            inputEl.style.borderBottom = "2px solid #dc3545"; 
+            setTimeout(() => inputEl.style.borderBottom = "none", 2000);
+            
+            return; 
+        }
+    }
+
+    inputEl.value = bmPadronizado;
+
+    if (bmPuro && bdEfetivoLocal && bdEfetivoLocal[bmPuro]) {
+        const dados = bdEfetivoLocal[bmPuro];
+        e.pg = dados.pg; 
+        e.nome = dados.nome; 
+        e.unidade = dados.und; 
+        e.instituicao = "CBMMG";
+        e.credenciamento = dados.credenciamento; 
+        e.categoria = dados.categoria;
+        e.ord = calcularOrd(dados.pg);
+    }
+    
+    e.n_bm = bmPadronizado; 
+    
+    autoSalvarEfetivo(linhaId, 6, bmPadronizado, {target: inputEl});
+    
+    if (!String(linhaId).startsWith('tmp-') && bmPuro && bdEfetivoLocal && bdEfetivoLocal[bmPuro]) {
+        const dados = bdEfetivoLocal[bmPuro];
+        autoSalvarEfetivo(linhaId, 7, dados.pg, null);
+        autoSalvarEfetivo(linhaId, 8, dados.nome, null);
+        autoSalvarEfetivo(linhaId, 10, dados.und, null);
+        autoSalvarEfetivo(linhaId, 5, "CBMMG", null);
+    }
+    
+    aplicarFiltrosEfetivo();
+  }
+
+  function mostrarCredenciais(cred, cat) {
+    swalDark({
+      title: '<i class="bi bi-shield-check text-info"></i> Informações de Credenciamento',
+      html: `<div class="text-start mt-2 p-2" style="font-size: 0.9rem;"><div class="mb-2"><b>Credenciamento:</b> <br><span class="text-warning">${cred}</span></div><div><b>Categoria:</b> <br><span class="text-warning">${cat}</span></div></div>`,
+      confirmButtonColor: '#0dcaf0',
+      confirmButtonText: 'Fechar'
+    });
+  }
+
+  // ==========================================
+  // EXCLUIR MILITAR (REORGANIZAÇÃO LOCAL ULTRA RÁPIDA)
+  // ==========================================
+  function excluirEfetivo(linha) {
+    swalDark({ title: 'Excluir?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Excluir' }).then(result => {
+      if (!result.isConfirmed) return;
+      
+      const linhaDeletadaNum = parseInt(linha);
+
+      if (String(linha).startsWith('tmp-')) {
+        cacheEfetivo = cacheEfetivo.filter(x => String(x.linha) !== String(linha));
+        aplicarFiltrosEfetivo();
+        return;
+      }
+
+      swalDark({ title: 'Excluindo...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+      if (typeof google !== 'undefined' && google.script) {
+        google.script.run
+          .withSuccessHandler(() => {
+              cacheEfetivo = cacheEfetivo.filter(x => String(x.linha) !== String(linha));
+
+              cacheEfetivo.forEach(militar => {
+                const numLinhaAtual = parseInt(militar.linha);
+                if (!isNaN(numLinhaAtual) && numLinhaAtual > linhaDeletadaNum) {
+                  militar.linha = numLinhaAtual - 1;
+                }
+              });
+
+              aplicarFiltrosEfetivo();
+              
+              swalDark({ icon: 'success', title: 'Excluído com sucesso!', timer: 1000, showConfirmButton: false });
+          })
+          .withFailureHandler((erro) => swalDark({ icon: 'error', title: 'Erro', text: erro.message }))
+          .excluirEfetivo(linha);
+      }
+    });
+  }
+
+  // ==========================================
+  // CÁLCULO DE PERÍODO (FUSO BRASILEIRO)
+  // ==========================================
+  function calcularPeriodoTrabalho(inicioStr, terminoStr) {
+    if (!inicioStr || !terminoStr) return "";
+    
+    const inicio = new Date(inicioStr);
+    const termino = new Date(terminoStr);
+    
+    if (isNaN(inicio.getTime()) || isNaN(termino.getTime())) return "";
+
+    let diff = termino.getTime() - inicio.getTime();
+    if (diff <= 0) return "00 D 00 H"; 
+
+    const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const horas = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    return `${String(dias).padStart(2, '0')} D ${String(horas).padStart(2, '0')} H`;
+  }
+
+  // ==========================================
+  // ADICIONAR LINHA EM BRANCO E NAVEGAÇÃO
+  // ==========================================
+  function adicionarLinhaEfetivo() {
+    const tbody = document.getElementById('lista-EFETIVO');
+    if (tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
+
+    const tmpId = 'tmp-' + Date.now();
+    
+    const novoMilitar = {
+      linha: tmpId, ord: 99, status: 'DISPONÍVEL', instituicao: 'CBMMG', n_bm: '', pg: '', nome: '',
+      qualificacao: '', unidade: '', contato: '', funcao: 'À Designar',
+      inicio_empenho: '', termino: '', dias_empenho: '', dia_chegada: ''
+    };
+    cacheEfetivo.push(novoMilitar);
+    
+    aplicarFiltrosEfetivo();
+    
+    setTimeout(() => { 
+      const tr = document.getElementById(`row-${tmpId}`);
+      if (tr) {
+        const inp = tr.querySelector('.inp-n_bm'); 
+        if (inp) inp.focus(); 
+      }
+    }, 100);
+  }
+
+  function navegarNbm(ev, linhaAtual) {
+    if (ev.key === 'Enter' || ev.key === 'Tab') {
+      if(ev.key === 'Enter') ev.preventDefault(); 
+      
+      ev.target.blur(); 
+      
+      setTimeout(() => {
+          const currentTr = ev.target.closest('tr'); 
+          const nextTr = currentTr ? currentTr.nextElementSibling : null;
+          
+          if (nextTr) { 
+              const nextInput = nextTr.querySelector('.inp-n_bm'); 
+              if(nextInput) nextInput.focus(); 
+          } else { 
+              if (ev.target.value.trim() !== '') {
+                  adicionarLinhaEfetivo(); 
+              }
+          }
+      }, 250); 
+    }
+  }
+
+  // ==========================================
+  // MOTOR DE FILTROS RESPONSIVOS (TEMPO REAL)
+  // ==========================================
+  function aplicarFiltrosEfetivo() {
+    if (!cacheEfetivo) return;
+
+    const valNome = document.getElementById('fNome').value.toLowerCase().trim();
+    const valStatus = document.getElementById('fStatus').value.toUpperCase().trim();
+    const valQuali = document.getElementById('fQuali').value.toLowerCase().trim();
+    const valUnidade = document.getElementById('fUnidade').value.toLowerCase().trim();
+
+    const filtrados = cacheEfetivo.filter(e => {
+      
+      if (String(e.linha).startsWith('tmp-')) return true;
+
+      let passaNome = true;
+      if (valNome) {
+        const nome = (e.nome || '').toLowerCase();
+        const n_bm = (e.n_bm || '').toLowerCase();
+        passaNome = nome.includes(valNome) || n_bm.includes(valNome);
+      }
+
+      let passaStatus = true;
+      if (valStatus) {
+        passaStatus = (e.status || '').toUpperCase().trim() === valStatus;
+      }
+
+      let passaQuali = true;
+      if (valQuali) {
+        const quali = (e.qualificacao || '').toLowerCase();
+        passaQuali = quali.includes(valQuali);
+      }
+
+      let passaUnidade = true;
+      if (valUnidade) {
+        const unidade = (e.unidade || '').toLowerCase();
+        passaUnidade = unidade.includes(valUnidade);
+      }
+
+      return passaNome && passaStatus && passaQuali && passaUnidade;
+    });
+
+    renderizarEfetivoListas(filtrados);
+  }
+
+  // ==========================================
+  // IMPORTAÇÃO EM LOTE - EFETIVO (CONTROLE UI)
+  // ==========================================
+  let loteEfetivoTemp = [];
+
+  function baixarTemplateEfetivo() {
+      window.open('https://docs.google.com/spreadsheets/d/1mGClhvkR4zZRweiE3yhoye3s5I0BwASohfkJGwZqwkA/edit?usp=sharing', '_blank');
+  }
+
+  function abrirModalImportacao() {
+      const input = document.getElementById('fileImportEfetivo');
+      const feedback = document.getElementById('importFeedbackEfetivo');
+      
+      if (input) input.value = '';
+      if (feedback) feedback.innerHTML = '';
+      
+      loteEfetivoTemp = [];
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalImportarEfetivo')).show();
+  }
+
+  function processarArquivoEfetivo(event) {
+    const arquivo = event.target.files[0];
+    if (!arquivo) return;
+
+    const feedback = document.getElementById('importFeedbackEfetivo');
+    feedback.innerHTML = '<span class="text-info"><i class="bi bi-arrow-repeat spin"></i> Lendo o arquivo Excel...</span>';
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const rawJson = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""});
+            
+            if(rawJson.length === 0) {
+                feedback.innerHTML = "<span class='text-danger'>A planilha está vazia!</span>";
+                return;
+            }
+
+            const loteLimpo = rawJson.map(row => {
+                const rowLimpa = {};
+                for (let key in row) { rowLimpa[key.toString().trim().toUpperCase()] = row[key]; }
+                
+                const postoGraduacao = rowLimpa["P/G"] || rowLimpa["PG"] || rowLimpa["POSTO"] || rowLimpa["GRADUAÇÃO"] || "";
+                
+                let bmPuro = String(rowLimpa["Nº BM"] || rowLimpa["N_BM"] || rowLimpa["BM"] || "").replace(/\D/g, '');
+                let bmPadronizado = bmPuro;
+                if (bmPuro.length > 1) {
+                    bmPadronizado = bmPuro.slice(0, -1) + '-' + bmPuro.slice(-1);
+                }
+                
+                return {
+                    ord: calcularOrd(postoGraduacao), 
+                    instituicao: rowLimpa["INSTITUIÇÃO"] || rowLimpa["INSTITUICAO"] || "CBMMG",
+                    n_bm: bmPadronizado,
+                    pg: postoGraduacao,
+                    nome: rowLimpa["NOME"] || rowLimpa["NOME COMPLETO"] || "",
+                    qualificacao: rowLimpa["QUALIFICAÇÃO PROFISSIONAL"] || rowLimpa["QUALIFICAÇÃO"] || rowLimpa["QUALIFICACAO"] || "",
+                    unidade: rowLimpa["UNIDADE"] || "",
+                    contato: rowLimpa["CONTATO"] || rowLimpa["TELEFONE"] || "",
+                    funcao: rowLimpa["FUNÇÃO"] || rowLimpa["FUNCAO"] || "À Designar",                  
+                    inicio_empenho: "",
+                    termino: "",
+                    dia_chegada: rowLimpa["DIA CHEGADA NA OP."] || rowLimpa["DIA_CHEGADA"] || rowLimpa["CHEGADA"] || "",
+                    cred: rowLimpa["CREDENCIAMENTO"] || rowLimpa["CRED"] || "",
+                    cat: rowLimpa["CATEGORIA"] || rowLimpa["CAT"] || ""
+                };
+            });
+
+            const bmsExistentes = cacheEfetivo.map(m => String(m.n_bm).replace(/\D/g, ''));
+            const loteNovo = [];
+            const duplicados = [];
+
+            loteLimpo.forEach(novo => {
+                const numAtual = String(novo.n_bm).replace(/\D/g, '');
+                if (numAtual && bmsExistentes.includes(numAtual)) {
+                    duplicados.push(novo);
+                } else {
+                    loteNovo.push(novo);
+                }
+            });
+
+            if (loteNovo.length === 0) {
+                Swal.fire('Aviso', 'Todos os militares desta planilha já constam nesta operação.', 'info');
+                document.getElementById('fileImportEfetivo').value = '';
+                feedback.innerHTML = "";
+                return;
+            }
+
+            let tituloAlerta = 'Planilha Lida com Sucesso!';
+            let resumo = `Encontramos <b>${loteLimpo.length} militares</b>.<br><br>`;
+            
+            if (duplicados.length > 0) {
+                tituloAlerta = 'Atenção: Militares Duplicados';
+                resumo = `<div class="text-danger fw-bold mb-2" style="font-size: 1rem;"><i class="bi bi-exclamation-triangle"></i> ${duplicados.length} militar(es) já existem na operação e serão ignorados!</div>`;
+                resumo += `Serão importados apenas os <b>${loteNovo.length} novos militares</b>.<br><br>`;
+            }
+
+            const primeira = loteNovo[0];
+            resumo += `<b>Amostra do 1º item novo lido:</b><br>`;
+            resumo += `Posto/Graduação: <span class="text-info">${primeira.pg || "Vazio"}</span><br>`;
+            resumo += `Nome: <span class="text-info">${primeira.nome || "Vazio"}</span><br>`;
+            resumo += `Unidade: <span class="text-info">${primeira.unidade || "Vazio"}</span><br><br>`;
+            resumo += `Deseja inserir este efetivo novo na operação atual?`;
+
+            bootstrap.Modal.getInstance(document.getElementById('modalImportarEfetivo')).hide();
+
+            Swal.fire({
+                title: tituloAlerta,
+                html: resumo,
+                icon: duplicados.length > 0 ? 'warning' : 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#dc3545',
+                confirmButtonText: 'Sim, Gravar no Banco',
+                cancelButtonText: 'Cancelar',
+                background: '#1e1e1e', color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    
+                    const idOpAtiva = document.getElementById('idOpAtiva') ? document.getElementById('idOpAtiva').value : 'OP-TESTE';
+
+                    const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3500 });
+                    Toast.fire({ icon: 'info', title: `Importando ${loteNovo.length} militares no banco...` });
+                    
+                    loteNovo.forEach(item => {
+                        let diaTratado = item.dia_chegada;
+                        if (diaTratado && !String(diaTratado).toUpperCase().includes('DIA')) diaTratado = "DIA " + diaTratado;
+
+                        cacheEfetivo.push({
+                            linha: 'tmp-lote-' + Math.floor(Math.random() * 1000000), 
+                            idOp: idOpAtiva,
+                            ord: item.ord || 99,
+                            status: "PRÉ CADASTRO", 
+                            instituicao: item.instituicao || "CBMMG",
+                            n_bm: item.n_bm || "",
+                            pg: item.pg || "",
+                            nome: item.nome || "",
+                            qualificacao: item.qualificacao || "",
+                            unidade: item.unidade || "",
+                            contato: item.contato || "",
+                            funcao: item.funcao || "À Designar",
+                            inicio_empenho: "",
+                            termino: "",
+                            dias_empenho: "",
+                            dia_chegada: diaTratado,
+                            credenciamento: item.cred || "",
+                            categoria: item.cat || ""
+                        });
+                    });
+
+                    renderizarEfetivoListas(cacheEfetivo);
+                    
+                    google.script.run
+                        .withSuccessHandler((qtdInserida) => {
+                            Toast.fire({ icon: 'success', title: `${qtdInserida} militares salvos no servidor!` });
+                            
+                            google.script.run.withSuccessHandler(d => { 
+                                cacheEfetivo = d; 
+                                renderizarEfetivoListas(cacheEfetivo);
+                            }).buscarEfetivo(idOpAtiva);
+                            
+                        }).withFailureHandler(err => {
+                            Swal.fire('Erro de Sincronização', 'Falha ao gravar no banco de dados: ' + err.message, 'error');
+                        }).salvarEfetivoLote({ idOp: idOpAtiva, lote: loteNovo });
+                        
+                } else {
+                    abrirModalImportacao(); 
+                }
+            });
+
+        } catch (err) {
+            feedback.innerHTML = `<span class='text-danger'>Erro: Formato incompatível. Use a planilha modelo.</span>`;
+        }
+    };
+    reader.readAsArrayBuffer(arquivo);
+  }
+
+  function toggleFsEfetivo() {
+    const box = document.getElementById('efetivo-section-box');
+    const btn = document.getElementById('btnFsEfetivo');
+    box.classList.toggle('fullscreen-mode-active');
+    
+    if (box.classList.contains('fullscreen-mode-active')) {
+      btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i> Sair Tela Cheia';
+      btn.classList.replace('btn-outline-light', 'btn-light');
+      btn.classList.add('text-dark');
+    } else {
+      btn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i> Tela Cheia';
+      btn.classList.replace('btn-light', 'btn-outline-light');
+      btn.classList.remove('text-dark');
+    }
+  }
+
+  // ==========================================
+  // EXPORTAÇÃO (EXCEL) - EFETIVO
+  // ==========================================
+  function exportarExcelEfetivo() {
+    if (typeof cacheEfetivo === 'undefined' || cacheEfetivo.length === 0) { 
+        Swal.fire('Aviso', 'Nenhum militar para exportar.', 'info'); 
+        return; 
+    }
+    
+    const dados = cacheEfetivo.map(r => ({
+        "Instituição": r.instituicao || '-',
+        "Status": r.status || '-',
+        "Nº BM": r.n_bm || '-',
+        "Posto/Grad": r.pg || '-',
+        "Nome": r.nome || '-',
+        "Unidade": r.unidade || '-',
+        "Contato": r.contato || '-',
+        "Função (SCI)": r.funcao || '-',
+        "Início Empenho": r.inicio_empenho || '-',
+        "Término Empenho": r.termino || '-',
+        "Dias Empenhado": r.dias_empenho || '-',
+        "Qualificação": r.qualificacao || '-'
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(dados);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Efetivo");
+    
+    const idOpAtiva = document.getElementById('idOpAtiva') ? document.getElementById('idOpAtiva').value : 'Operacao';
+    XLSX.writeFile(wb, `Efetivo_${idOpAtiva}.xlsx`);
+  }
+
+</script>

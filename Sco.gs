@@ -104,9 +104,17 @@ function salvarDadosSCO(dados) {
     }
 
     // Salva as ações filhas (se existirem) na aba SCO_Acoes
+    // Coluna FOTOS guarda um JSON [{url,id,nome}] com as imagens anexadas à ação.
     if (dados.listaAcoes && dados.listaAcoes.length > 0) {
-      const arrayAcoesInserir = dados.listaAcoes.map(item => [tokenRelacional, item.hora, item.texto, 0, 0]);
-      abaAcoes.getRange(abaAcoes.getLastRow() + 1, 1, arrayAcoesInserir.length, 5).setValues(arrayAcoesInserir);
+      const arrayAcoesInserir = dados.listaAcoes.map(item => [
+        tokenRelacional,
+        item.hora,
+        item.texto,
+        JSON.stringify(item.fotos || []),
+        0,
+        0
+      ]);
+      abaAcoes.getRange(abaAcoes.getLastRow() + 1, 1, arrayAcoesInserir.length, 6).setValues(arrayAcoesInserir);
     }
     
     return { sucesso: true, mensagem: dados.modoEdicao ? "Formulário atualizado com sucesso!" : "Formulário salvo com sucesso!" };
@@ -142,8 +150,18 @@ function carregarHistoricoSCO(idOpAtiva) {
         }
         
         let acao = String(dadosAcoes[j][2]).trim();
+
+        // Coluna 4 (índice 3) = FOTOS em JSON. Blindado contra dados legados/inválidos.
+        let fotos = [];
+        try {
+          let brutoFotos = dadosAcoes[j][3];
+          if (brutoFotos && String(brutoFotos).trim().charAt(0) === '[') {
+            fotos = JSON.parse(brutoFotos);
+          }
+        } catch (eF) { fotos = []; }
+
         if (!mapaAcoes[fk]) mapaAcoes[fk] = [];
-        mapaAcoes[fk].push({ hora: horaFormatada, texto: acao });
+        mapaAcoes[fk].push({ hora: horaFormatada, texto: acao, fotos: fotos });
       }
     }
 
@@ -190,6 +208,53 @@ function carregarHistoricoSCO(idOpAtiva) {
     }
     return historico.reverse();
   } catch (e) { return []; }
+}
+
+/**
+ * Recebe uma foto em base64 vinda da tela, salva no Google Drive dentro de uma
+ * pasta organizada por operação e devolve a URL pública para exibir/imprimir.
+ * Chamada por google.script.run a partir do formulário de ações do SCO.
+ */
+function uploadFotoSCO(payload) {
+  try {
+    const idOp = String(payload.idOp || "geral").trim();
+    const nomeOp = String(payload.nomeOp || "OPERACAO").trim();
+    const mime = payload.mime || "image/jpeg";
+    const nomeArquivo = payload.nome || ("foto_" + new Date().getTime() + ".jpg");
+
+    // Decodifica o base64 (removendo o cabeçalho data:...;base64, se vier junto)
+    let dadosBase64 = String(payload.base64 || "");
+    const virgula = dadosBase64.indexOf(",");
+    if (virgula > -1) dadosBase64 = dadosBase64.substring(virgula + 1);
+
+    const bytes = Utilities.base64Decode(dadosBase64);
+    const blob = Utilities.newBlob(bytes, mime, nomeArquivo);
+
+    // Estrutura de pastas: GeoFOGO_SCO / <NOME_OP (ID)>
+    const pastaRaiz = obterOuCriarPasta_(DriveApp.getRootFolder(), "GeoFOGO_SCO");
+    const pastaOp = obterOuCriarPasta_(pastaRaiz, nomeOp + " (" + idOp + ")");
+
+    const arquivo = pastaOp.createFile(blob);
+    arquivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    const id = arquivo.getId();
+    return {
+      sucesso: true,
+      id: id,
+      nome: nomeArquivo,
+      url: "https://drive.google.com/uc?export=view&id=" + id,
+      link: arquivo.getUrl()
+    };
+  } catch (e) {
+    return { sucesso: false, mensagem: "Falha no upload da foto: " + e.message };
+  }
+}
+
+/** Retorna a subpasta pelo nome dentro de "pai", criando-a se não existir. */
+function obterOuCriarPasta_(pai, nome) {
+  const existentes = pai.getFoldersByName(nome);
+  if (existentes.hasNext()) return existentes.next();
+  return pai.createFolder(nome);
 }
 
 function excluirRegistroSCO(linha, token) {

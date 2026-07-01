@@ -1,0 +1,307 @@
+<style>
+  .vit-card { background-color: #1a1a1a; border: 1px solid #444; border-radius: 6px; overflow: hidden; }
+  .badge-status { font-size: 0.75rem; padding: 4px 10px; font-weight: 700; text-transform: uppercase; }
+  .st-Ferido { background-color: #fd7e14; color: #000; }
+  .st-Óbito { background-color: #dc3545; color: #fff; }
+  .st-Desaparecido { background-color: #6c757d; color: #fff; }
+  .st-Resgatado { background-color: #198754; color: #fff; }
+  .st-Ileso { background-color: #0dcaf0; color: #000; }
+  #tabelaVitimas td { vertical-align: middle; }
+</style>
+
+<div class="section-box mt-3" id="vitimas-section-box">
+  <div class="section-title mb-2">REGISTRO DE VÍTIMAS</div>
+
+  <div class="d-flex flex-wrap align-items-center mb-3 gap-2">
+    <button class="btn btn-warning fw-bold text-dark px-3 shadow-sm" onclick="abrirModalVitima()">
+      <i class="bi bi-person-plus-fill"></i> Registrar Vítima
+    </button>
+    <button class="btn btn-outline-info fw-bold shadow-sm" onclick="recarregarVitimas()">
+      <i class="bi bi-arrow-clockwise"></i> Atualizar Lista
+    </button>
+
+    <div class="d-flex align-items-center gap-2 justify-content-end flex-wrap ms-auto">
+      <span class="text-info fw-bold small">FILTRAR:</span>
+      <input type="text" id="fVitNome" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 170px;" placeholder="Nome / local..." oninput="aplicarFiltrosVitimas()">
+      <select id="fVitStatus" class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="aplicarFiltrosVitimas()">
+        <option value="">Status (Todos)</option>
+        <option value="Ferido">Ferido</option>
+        <option value="Óbito">Óbito</option>
+        <option value="Desaparecido">Desaparecido</option>
+        <option value="Resgatado">Resgatado</option>
+        <option value="Ileso">Ileso</option>
+      </select>
+      <select id="fVitDia" class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 120px;" onchange="aplicarFiltrosVitimas()">
+        <option value="">Dia (Todos)</option>
+      </select>
+      <button class="btn btn-sm btn-primary fw-bold ms-2" id="contadorVitimas" style="pointer-events: none;">Total: 0</button>
+    </div>
+  </div>
+
+  <div class="vit-card">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle m-0" id="tabelaVitimas" style="font-size: 0.85rem;">
+        <thead>
+          <tr class="text-uppercase" style="background-color: #2b2b2b; font-size: 0.72rem; letter-spacing: 0.5px;">
+            <th style="width: 90px;">Ações</th>
+            <th>Status</th>
+            <th>Dia / Hora</th>
+            <th>Nome</th>
+            <th>Idade</th>
+            <th>Sexo</th>
+            <th>Local</th>
+            <th>Descrição</th>
+            <th>Encaminhamento</th>
+          </tr>
+        </thead>
+        <tbody id="lista-VITIMAS">
+          <tr><td colspan="9" class="text-center text-muted py-4">Abra uma operação para carregar as vítimas.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalVitima" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content bg-dark text-white" style="border: 2px solid #ffc107;">
+      <div class="modal-header border-secondary" style="background-color: #000;">
+        <h5 class="modal-title text-white fw-bold w-100 text-center fs-6">REGISTRO DE VÍTIMA</h5>
+        <button type="button" class="btn-close btn-close-white position-absolute end-0 me-3" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-3" style="background-color: #121212;">
+        <form id="formVitima">
+          <input type="hidden" id="vitLinha">
+
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-warning">Dia de Operação</label>
+              <input type="text" id="vitDia" class="form-control form-control-sm bg-dark text-white border-secondary text-uppercase" placeholder="DIA 1">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-warning">Hora</label>
+              <input type="time" id="vitHora" class="form-control form-control-sm bg-dark text-white border-secondary" style="color-scheme: dark;">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-warning">Situação da Vítima</label>
+              <select id="vitStatus" class="form-select form-select-sm bg-dark text-white border-secondary">
+                <option value="Ferido">Ferido</option>
+                <option value="Resgatado">Resgatado</option>
+                <option value="Ileso">Ileso</option>
+                <option value="Desaparecido">Desaparecido</option>
+                <option value="Óbito">Óbito</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-warning">Nome da Vítima <span class="text-secondary">(se souber)</span></label>
+              <input type="text" id="vitNome" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Nome ou 'Não identificado'">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-warning">Idade</label>
+              <input type="text" id="vitIdade" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Ex: 34 / aprox.">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-warning">Sexo</label>
+              <select id="vitSexo" class="form-select form-select-sm bg-dark text-white border-secondary">
+                <option value="">-</option>
+                <option value="M">Masculino</option>
+                <option value="F">Feminino</option>
+                <option value="ND">Não identificado</option>
+              </select>
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label small fw-bold text-warning">Local onde foi encontrada</label>
+              <input type="text" id="vitLocal" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Bairro, rua, ponto de referência...">
+            </div>
+            <div class="col-md-12">
+              <label class="form-label small fw-bold text-warning">Descrição / Ferimentos</label>
+              <textarea id="vitDescricao" rows="2" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Condição encontrada, ferimentos aparentes..."></textarea>
+            </div>
+            <div class="col-md-12">
+              <label class="form-label small fw-bold text-warning">Encaminhamento</label>
+              <input type="text" id="vitEncaminhamento" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Hospital, abrigo, entregue à Defesa Civil...">
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer border-secondary" style="background-color: #2b2b2b;">
+        <button type="button" class="btn btn-secondary btn-sm fw-bold" data-bs-dismiss="modal">CANCELAR</button>
+        <button type="button" class="btn btn-warning btn-sm fw-bold text-dark" id="btnSalvarVitima" onclick="salvarVitima()"><i class="bi bi-save"></i> SALVAR REGISTRO</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.body.appendChild(document.getElementById('modalVitima'));
+  let cacheVitimas = [];
+
+  window.addEventListener('operacaoAberta', function () { recarregarVitimas(); });
+
+  function recarregarVitimas() {
+    const idOp = document.getElementById('idOpAtiva') ? document.getElementById('idOpAtiva').value : null;
+    if (!idOp) return;
+    document.getElementById('lista-VITIMAS').innerHTML = '<tr><td colspan="9" class="text-center text-warning py-4"><div class="spinner-border spinner-border-sm me-2"></div>Carregando vítimas...</td></tr>';
+    if (typeof google !== 'undefined' && google.script) {
+      google.script.run.withSuccessHandler(d => {
+        cacheVitimas = d || [];
+        atualizarDatalistDiasVitimas();
+        aplicarFiltrosVitimas();
+      }).buscarVitimas(idOp);
+    }
+  }
+
+  function renderizarVitimas(lista) {
+    const tbody = document.getElementById('lista-VITIMAS');
+    if (!lista || lista.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Nenhuma vítima registrada.</td></tr>';
+      return;
+    }
+    let html = '';
+    lista.forEach(v => {
+      const cls = 'st-' + (v.status || '');
+      html += `
+        <tr>
+          <td>
+            <button class="btn btn-warning btn-sm py-0 px-2 me-1" title="Editar" onclick="editarVitima(${v.linha})"><i class="bi bi-pencil-square"></i></button>
+            <button class="btn btn-danger btn-sm py-0 px-2" title="Excluir" onclick="excluirVitima(${v.linha})"><i class="bi bi-trash3-fill"></i></button>
+          </td>
+          <td><span class="badge badge-status ${cls}">${v.status || '-'}</span></td>
+          <td><span class="text-info fw-bold">${v.dia || '-'}</span><br><span class="text-white">${v.hora || ''}</span></td>
+          <td class="fw-bold text-white">${v.nome || '-'}</td>
+          <td>${v.idade || '-'}</td>
+          <td>${v.sexo || '-'}</td>
+          <td>${v.local || '-'}</td>
+          <td style="max-width: 240px; white-space: normal;">${v.descricao || '-'}</td>
+          <td style="max-width: 200px; white-space: normal;">${v.encaminhamento || '-'}</td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+  }
+
+  function atualizarDatalistDiasVitimas() {
+    const sel = document.getElementById('fVitDia');
+    sel.innerHTML = '<option value="">Dia (Todos)</option>';
+    const dias = [...new Set(cacheVitimas.map(v => v.dia).filter(String))].sort();
+    dias.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d; opt.textContent = d; sel.appendChild(opt);
+    });
+  }
+
+  function aplicarFiltrosVitimas() {
+    const termo = document.getElementById('fVitNome').value.toLowerCase();
+    const status = document.getElementById('fVitStatus').value;
+    const dia = document.getElementById('fVitDia').value;
+
+    const filtradas = cacheVitimas.filter(v => {
+      let ok = true;
+      if (termo && !((v.nome || '').toLowerCase().includes(termo) || (v.local || '').toLowerCase().includes(termo))) ok = false;
+      if (status && v.status !== status) ok = false;
+      if (dia && v.dia !== dia) ok = false;
+      return ok;
+    });
+
+    renderizarVitimas(filtradas);
+    document.getElementById('contadorVitimas').textContent = 'Total: ' + filtradas.length;
+  }
+
+  function abrirModalVitima() {
+    const idOp = document.getElementById('idOpAtiva') ? document.getElementById('idOpAtiva').value : null;
+    if (!idOp) {
+      if (typeof swalDark !== 'undefined') swalDark({ icon: 'warning', title: 'Atenção', text: 'Nenhuma operação aberta.' });
+      return;
+    }
+    document.getElementById('formVitima').reset();
+    document.getElementById('vitLinha').value = '';
+
+    // Preenche dia atual e hora atual automaticamente para agilizar
+    let diaAtual = 'DIA 1';
+    if (typeof operacoesGlobais !== 'undefined') {
+      const op = operacoesGlobais.find(o => String(o.id) === String(idOp));
+      if (op && typeof calcularDuracao === 'function') diaAtual = calcularDuracao(op.inicio, op.termino, op.status) || 'DIA 1';
+    }
+    document.getElementById('vitDia').value = diaAtual;
+    const now = new Date();
+    document.getElementById('vitHora').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+    document.getElementById('btnSalvarVitima').innerHTML = '<i class="bi bi-save"></i> SALVAR REGISTRO';
+    document.getElementById('btnSalvarVitima').className = 'btn btn-warning btn-sm fw-bold text-dark';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalVitima')).show();
+  }
+
+  function editarVitima(linha) {
+    const v = cacheVitimas.find(x => String(x.linha) === String(linha));
+    if (!v) return;
+    document.getElementById('vitLinha').value = v.linha;
+    document.getElementById('vitDia').value = v.dia || '';
+    document.getElementById('vitHora').value = v.hora || '';
+    document.getElementById('vitStatus').value = v.status || 'Ferido';
+    document.getElementById('vitNome').value = v.nome || '';
+    document.getElementById('vitIdade').value = v.idade || '';
+    document.getElementById('vitSexo').value = v.sexo || '';
+    document.getElementById('vitLocal').value = v.local || '';
+    document.getElementById('vitDescricao').value = v.descricao || '';
+    document.getElementById('vitEncaminhamento').value = v.encaminhamento || '';
+
+    document.getElementById('btnSalvarVitima').innerHTML = '<i class="bi bi-arrow-repeat"></i> ATUALIZAR';
+    document.getElementById('btnSalvarVitima').className = 'btn btn-success btn-sm fw-bold text-white';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalVitima')).show();
+  }
+
+  function salvarVitima() {
+    const idOp = document.getElementById('idOpAtiva') ? document.getElementById('idOpAtiva').value : null;
+    if (!idOp) return;
+
+    const nome = document.getElementById('vitNome').value.trim();
+    const local = document.getElementById('vitLocal').value.trim();
+    if (!nome && !local) {
+      if (typeof swalDark !== 'undefined') swalDark({ icon: 'warning', title: 'Atenção', text: 'Informe ao menos o nome ou o local da vítima.' });
+      return;
+    }
+
+    const dados = {
+      linha: document.getElementById('vitLinha').value,
+      idOp: idOp,
+      dia: document.getElementById('vitDia').value.toUpperCase(),
+      hora: document.getElementById('vitHora').value,
+      nome: nome,
+      idade: document.getElementById('vitIdade').value,
+      sexo: document.getElementById('vitSexo').value,
+      status: document.getElementById('vitStatus').value,
+      local: local,
+      descricao: document.getElementById('vitDescricao').value,
+      encaminhamento: document.getElementById('vitEncaminhamento').value
+    };
+
+    if (typeof swalDark !== 'undefined') swalDark({ title: 'Salvando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    google.script.run.withSuccessHandler(res => {
+      if (res && res.sucesso) {
+        bootstrap.Modal.getInstance(document.getElementById('modalVitima')).hide();
+        if (typeof swalDark !== 'undefined') swalDark({ icon: 'success', title: 'Sucesso', text: res.mensagem, timer: 1400, showConfirmButton: false });
+        recarregarVitimas();
+      } else {
+        if (typeof swalDark !== 'undefined') swalDark({ icon: 'error', title: 'Erro', text: (res && res.mensagem) || 'Falha ao salvar.' });
+      }
+    }).withFailureHandler(err => {
+      if (typeof swalDark !== 'undefined') swalDark({ icon: 'error', title: 'Erro', text: err.message });
+    }).salvarVitima(dados);
+  }
+
+  function excluirVitima(linha) {
+    if (typeof swalDark === 'undefined') return;
+    swalDark({ title: 'Excluir registro?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Excluir' }).then(r => {
+      if (!r.isConfirmed) return;
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.sucesso) {
+          swalDark({ icon: 'success', title: 'Excluído!', timer: 1000, showConfirmButton: false });
+          recarregarVitimas();
+        } else { swalDark({ icon: 'error', title: 'Erro', text: (res && res.mensagem) || 'Falha.' }); }
+      }).withFailureHandler(err => swalDark({ icon: 'error', title: 'Erro', text: err.message })).excluirVitima(linha);
+    });
+  }
+</script>

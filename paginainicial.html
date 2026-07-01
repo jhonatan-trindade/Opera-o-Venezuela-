@@ -155,54 +155,30 @@
         <h3 id="tituloOperacao" class="m-0 text-white fw-bold">---</h3>
       </div>
 
-      <!-- Lado Direito: Botão de Sugestões -->
-      <button class="btn btn-outline-info btn-sm fw-bold" onclick="abrirModalFeedback()" title="Sugerir Melhorias">
-        <i class="bi bi-chat-square-text"></i> SUGESTÕES
-      </button>
-
     </div>
     
     <input type="hidden" id="idOpAtiva" value="">
     
     <ul class="nav nav-tabs" id="abasOperacao" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff" type="button" role="tab">STAFF (SCI)</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link fw-bold" id="sco-tab" data-bs-toggle="tab" data-bs-target="#sco" type="button" role="tab" aria-controls="sco" aria-selected="false" style="color: #0dcaf0 !important;">
+        <button class="nav-link active fw-bold" id="sco-tab" data-bs-toggle="tab" data-bs-target="#sco" type="button" role="tab" aria-controls="sco" aria-selected="true" style="color: #0dcaf0 !important;">
           <i class="bi bi-journal-text"></i> Formulários SCO
         </button>
       </li>
       <li class="nav-item" role="presentation">
+        <button class="nav-link" id="vitimas-tab" data-bs-toggle="tab" data-bs-target="#vitimas" type="button" role="tab" aria-controls="vitimas"><i class="bi bi-person-vcard"></i> REGISTRO DE VÍTIMAS</button>
+      </li>
+      <li class="nav-item" role="presentation">
         <button class="nav-link" id="efetivo-tab" data-bs-toggle="tab" data-bs-target="#efetivo" type="button" role="tab" aria-controls="efetivo">CADASTRO DE EFETIVO</button>
       </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="designacao-tab" data-bs-toggle="tab" data-bs-target="#designacao" type="button" role="tab" aria-controls="designacao">DESIGNAÇÃO DE EQUIPES</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="logistica-tab" data-bs-toggle="tab" data-bs-target="#logistica" type="button" role="tab" aria-controls="logistica">CADASTRO LOGÍSTICO</button>
-      </li>  
-      <li class="nav-item" role="presentation">
-  <button class="nav-link" id="gis-tab" data-bs-toggle="tab" data-bs-target="#gis" type="button" role="tab" aria-controls="gis">MAPA DO CENÁRIO</button>
-</li>
     </ul>
-    
+
     <div class="tab-content p-4 shadow" id="conteudoAbas">
-      <div class="tab-pane fade show active" id="staff" role="tabpanel" aria-labelledby="staff-tab"><?!= include('STAFF'); ?></div>
-      <div class="tab-pane fade" id="sco" role="tabpanel" aria-labelledby="sco-tab"><?!= include('SCO'); ?></div>
-      <div class="tab-pane fade" id="efetivo" role="tabpanel" aria-labelledby="efetivo-tab"><?!= include('Efetivo'); ?></div>   
-      <div class="tab-pane fade" id="designacao" role="tabpanel" aria-labelledby="designacao-tab"><?!= include('Designacao'); ?></div>
-      <div class="tab-pane fade" id="logistica" role="tabpanel" aria-labelledby="logistica-tab"><?!= include('Logistica'); ?></div>
+      <div class="tab-pane fade show active" id="sco" role="tabpanel" aria-labelledby="sco-tab"><?!= include('SCO'); ?></div>
+      <div class="tab-pane fade" id="vitimas" role="tabpanel" aria-labelledby="vitimas-tab"><?!= include('Vitimas'); ?></div>
+      <div class="tab-pane fade" id="efetivo" role="tabpanel" aria-labelledby="efetivo-tab"><?!= include('efetivo'); ?></div>
     </div>
-      <div class="tab-pane fade" id="gis" role="tabpanel" aria-labelledby="gis-tab">
-  <iframe 
-    id="iframeMapaOperacional"
-    src="" 
-    style="width: 100%; height: 78vh; border: none; border-radius: 6px; background-color: #1a1a1a;"
-    allow="geolocation; microphone; camera">
-  </iframe>
-    </div>
-  
+
 </div>
     </div>
   </div>
@@ -299,8 +275,6 @@
       </div>
     </div>
   </div>
-
-  <?!= include('Feedback'); ?>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
@@ -475,6 +449,9 @@
       document.getElementById('idOpAtiva').value = id;
       
       window.dispatchEvent(new CustomEvent('operacaoAberta', { detail: { idOp: id } }));
+
+      // SCO é a aba ativa por padrão e só recarregava ao clicar na aba; força o load aqui.
+      if (typeof recarregarSCO === 'function') recarregarSCO();
     }
 
     function voltarParaOperacoes() {

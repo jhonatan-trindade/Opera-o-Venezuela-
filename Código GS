@@ -33,13 +33,13 @@ function configurarSistema() {
     
     const abas = {
       "Cadastro_geral": ["ID", "NOME", "COB", "MUNICÍPIO", "CHAMADA", "STATUS", "INÍCIO", "TÉRMINO", "DURAÇÃO", "EFETIVO_TOTAL", "VTRS_TOTAL"],
-      "Staff_Detalhado": ["ID_OP", "FUNÇÃO", "NOME", "P/G", "NÚMERO", "UNIDADE", "MOBILIZAÇÃO", "STATUS", "TELEFONE"],
       "Cadastro_Efetivo": ["ID_OP", "NOME_OP", "ORD", "STATUS", "INSTITUIÇÃO", "N_BM", "PG", "NOME", "QUALIFICAÇÃO PROFISSIONAL", "UNIDADE", "CONTATO", "FUNÇÃO", "LOCAL_ATUAÇÃO", "INÍCIO_EMPENHO", "TÉRMINO DO EMPENHO", "DIAS_EMPENHO", "DIA_CHEGADA", "LAT", "LONG"],
-      "Logistica": ["ID_OP", "NOME_OP", "COB", "UNIDADE", "CATEGORIA", "TIPO RECURSO", "IDENTIFICAÇÃO DO RECURSO", "CAPACIDADE", "QUANTIDADE", "PONTO FOCAL", "CONTATO", "LOCAL", "STATUS", "OBSERVAÇÃO", "MUNICÍPIO DESIGNAÇÃO", "FRENTE", "RESPONSÁVEL", "EQUIPE", "DATA_HORA_MOB", "DATA_HORA_DESMOB", "LAT", "LONG"],
       "SCO": ["ID_OP", "NOME_OP", "CICLO_INICIO", "CICLO_FIM", "DIA", "RESUMO", "OBJETIVOS", "ENFASE_PERIODO", "SITUAÇÃO", "NOME", "CARGO", "DATA", "AÇÕES", "LAT" , "LONG", "MUNICIPIO"],
-      "SCO_Acoes": ["ID_SCO_FK", "HORA", "AÇÃO", "LAT", "LONG"],
-      // Novas abas adicionadas:
-      "EFETIVO_CBMMG": [], 
+      "SCO_Acoes": ["ID_SCO_FK", "HORA", "AÇÃO", "FOTOS", "LAT", "LONG"],
+      // Registro de vítimas (novo módulo da plataforma de resgate)
+      "Vitimas": ["ID_OP", "NOME_OP", "DIA", "HORA", "NOME", "IDADE", "SEXO", "STATUS", "LOCAL", "DESCRICAO", "ENCAMINHAMENTO", "DATA_REGISTRO", "LAT", "LONG"],
+      // Base de apoio para importação de efetivo:
+      "EFETIVO_CBMMG": [],
       "VIATURA_CBMMG": []
     };
 
@@ -135,9 +135,8 @@ function carregarDadosPaginaInterna(idOp) {
 
     const resultado = {
       operacao: buscarDadosOperacaoPorId(idOp),
-      staff: buscarStaffCompleto(idOp),
       efetivo: buscarEfetivo(idOp),
-      logistica: buscarLogistica(idOp)
+      vitimas: buscarVitimas(idOp)
     };
 
     try {
@@ -219,41 +218,6 @@ function buscarDadosOperacaoPorId(idOp) {
     }
   }
   return null;
-}
-
-// --- ABA 1: STAFF (SCI) ---
-function buscarStaffCompleto(idOp) {
-  const dados = getDadosAba('Staff_Detalhado');
-  if (dados.length <= 1) return [];
-  const resultado = [];
-  for (let i = 1; i < dados.length; i++) {
-    const l = dados[i];
-    if (l[0] != idOp) continue;
-    resultado.push({
-      linha: i + 1, funcao: l[1], nome: l[2], pg: l[3], num: l[4], und: l[5], mob: l[6], status: l[7], tel: l[8]
-    });
-  }
-  return resultado;
-}
-
-function salvarStaffBatch(payload) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const aba = ss.getSheetByName("Staff_Detalhado");
-    const dadosSheet = aba.getDataRange().getValues();
-
-    for (let i = dadosSheet.length - 1; i >= 1; i--) {
-      if (dadosSheet[i][0] == payload.idOp) {
-        aba.deleteRow(i + 1);
-      }
-    }
-    if (payload.staff && payload.staff.length > 0) {
-      aba.getRange(aba.getLastRow() + 1, 1, payload.staff.length, payload.staff[0].length).setValues(payload.staff);
-    }
-    limparCache('Staff_Detalhado');
-    invalidarCacheOp(payload.idOp);
-    return "Organograma de Comando (SCI) guardado com sucesso!";
-  } catch (e) { throw new Error("Falha ao gravar SCI: " + e.message); }
 }
 
 // --- FUNÇÕES AUXILIARES DE DATA ---
@@ -497,65 +461,6 @@ function salvarEfetivoLote(payload) {
 function carregarBaseEfetivoCBMMG() {
   // Ponte direta para a função que você já tem no código (buscarTodoEfetivoCBMMG)
   return buscarTodoEfetivoCBMMG();
-}
-
-// --- ABA 3: LOGÍSTICA ---
-function buscarLogistica(idOp) {
-  const dados = getDadosAba("Logistica");
-  if (dados.length <= 1) return [];
-  const resultado = [];
-  for (let i = 1; i < dados.length; i++) {
-    const l = dados[i];
-    if (l[0] != idOp) continue;
-    resultado.push({
-      linha: i + 1, cob: l[2], unidade: l[3], categoria: l[4], tipo: l[5], identificacao: l[6], capacidade: l[7], quantidade: l[8],
-      ponto_focal: l[9], contato: l[10], local: l[11], status: l[12], observacao: l[13], municipio: l[14], frente: l[15], responsavel: l[16],
-      equipe: l[17], data_mob: l[18], data_desmob: l[19], lat: l[20] || "0", long: l[21] || "0"
-    });
-  }
-  return resultado;
-}
-
-function salvarLogistica(dados) {
-  try {
-    const aba = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Logistica");
-    const dadosOp = getDadosAba('Cadastro_geral');
-    let nomeOperacao = "Não encontrado";
-    for (let i = 1; i < dadosOp.length; i++) { if (dadosOp[i][0] == dados.idOp) { nomeOperacao = dadosOp[i][1]; break; } }
-    
-    const valores = [
-      dados.idOp, nomeOperacao, dados.cob, dados.unidade, dados.categoria, dados.tipo, dados.identificacao, dados.capacidade,
-      dados.quantidade, dados.ponto_focal, dados.contato, dados.local, dados.status, dados.observacao, dados.municipio,
-      dados.frente, dados.responsavel, dados.equipe, dados.data_mob, dados.data_desmob, dados.lat || "0", dados.long || "0"
-    ];
-    if (dados.linha) { aba.getRange(dados.linha, 1, 1, valores.length).setValues([valores]); } 
-    else { aba.appendRow(valores); }
-    
-    limparCache('Logistica'); invalidarCacheOp(dados.idOp);
-    return true;
-  } catch (e) { throw new Error(e.message); }
-}
-
-function excluirLogistica(linha) {
-  const aba = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Logistica");
-  const idOp = aba.getRange(parseInt(linha), 1).getValue();
-  aba.deleteRow(parseInt(linha));
-  SpreadsheetApp.flush();
-  limparCache('Logistica');
-  invalidarCacheOp(idOp);
-  return true;
-}
-
-
-
-/**
- * Auxiliar para salvar estado do organograma de forma síncrona
- */
-function salvarEstadoSCI(idOp, funcao, diaAtual, checksJson, obsJson) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName("Staff_Detalhado"); // Salva metadados se necessário ou aba auxiliar dedicada
-  // Mantido simplificado para compatibilidade de persistência curta
-  return true;
 }
 
 /**
